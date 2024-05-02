@@ -1,0 +1,139 @@
+.daily-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px;
+    /* position: relative; */
+}
+
+.header h1 {
+    color: navy;
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+.front-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.front-form input[type="text"],
+.front-form input[type="date"]
+ {
+    width: 30%;
+}
+.front-form select{
+    width: 31.5%;
+}
+
+form input, form select {
+    margin: 5px 0;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table th, table td {
+    border: 1px solid #ddd;
+    text-align: left;
+    padding: 5px;
+}
+
+table th {
+    background-color: #f4f4f4;
+}
+
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.ph {
+    width: 14px !important;
+}
+.ah{
+    width: 14.5px !important;
+}
+
+input[type="number"][name="actualHour"],
+input[type="number"][name="plannerHour"] {
+    width: 40px; 
+    padding: 5px !important;
+}
+
+input[type="text"][name="taskDescription"] {
+    width: 97% !important;
+    padding: 8px;
+    padding-top: -5px;
+
+}
+
+input[type="text"][name="incCr"],
+input[type="text"][name="product"] {
+    width: auto !important; 
+    padding: 10px !important;
+}
+
+select[name="taskType"]{
+  width: 99%;
+  padding: 8px !important;
+}
+
+.inc{
+    width: 15% !important;
+}
+
+button {
+    margin-top: 5px !important;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    align-items: center;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+.but{
+    width: 10px !important;
+    align-items: center;
+}
+.inc{
+    text-align: center;
+}
+.desc{
+    text-align: center;
+}
+.ph, .ah{
+    text-align: center;
+}
+
+.daily-form, .card-container, .card {
+    animation: fadeInAnimation 0.5s ease-out forwards;
+}
+
+@keyframes fadeInAnimation {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.logo {
+    margin-right: 20px !important;
+  }

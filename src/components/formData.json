@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Neeraj Kumar",
+    "date": "2024-04-29",
+    "cluster": "5",
+    "resourceType": "Delivery",
+    "tasks": [
+      {
+        "incCr": "INC609994",
+        "product": "E2E US",
+        "taskType": "Incident Resolution",
+        "taskDescription": "Difference Between 13 period and 3 period are almost same.",
+        "actualHour": "",
+        "plannerHour": "4"
+      },
+      {
+        "incCr": "NA",
+        "product": "E2E US",
+        "taskType": "KT & Onboarding",
+        "taskDescription": "Watching KT Videos for E2E US ",
+        "actualHour": "",
+        "plannerHour": "3"
+      },
+      {
+        "incCr": "NA",
+        "product": "R2D2",
+        "taskType": "Internal Communication",
+        "taskDescription": "Daily Scrum",
+        "actualHour": "",
+        "plannerHour": "1"
+      }
+    ]
+  }
+]

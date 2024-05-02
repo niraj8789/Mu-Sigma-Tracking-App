@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Neeraj Kumar",
+    "email": "itsniraj4@gmail.com",
+    "password": "Neeraj@8789",
+    "cluster": "5",
+    "clusterLead": "NA"
+  },
+  {
+    "name": "Niraj Kumar",
+    "email": "neeraj.kumar@mu-sigma.com",
+    "password": "Neeraj@8789",
+    "cluster": "5",
+    "clusterLead": "Naveen"
+  },
+  {
+    "name": "Niraj Kumar",
+    "email": "itsniraj4@gmail.com",
+    "password": "Neeraj@8789",
+    "cluster": "5",
+    "clusterLead": "Naveen"
+  },
+  {
+    "name": "Pratik ",
+    "email": "neeraj.kumar.2@effem.com",
+    "password": "Neeraj@8789",
+    "cluster": "5",
+    "clusterLead": "Naveen"
+  },
+  {
+    "name": "Harikesh",
+    "email": "harikesh.raj.t@effem.com",
+    "password": "1234",
+    "cluster": "5",
+    "clusterLead": "Naveen"
+  },
+  {
+    "name": "Sujitjh",
+    "email": "sujith23@gmail.com",
+    "password": "Neeraj@8789",
+    "cluster": "6",
+    "clusterLead": "Datla"
+  }
+]
