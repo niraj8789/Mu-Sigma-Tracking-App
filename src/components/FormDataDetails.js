@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './FormDataDetails.css';
-import moment from 'moment'; // Ensure the correct import and remove comment
+import moment from 'moment' // Make sure this file path is correct
 
 function FormDataDetails() {
     const { state } = useLocation();
@@ -27,7 +27,7 @@ function FormDataDetails() {
     useEffect(() => {
         const totalPlannedHours = tasks.reduce((acc, task) => acc + parseFloat(task.plannerHour), 0);
         const completedHours = tasks.reduce((acc, task) => task.completed ? acc + parseFloat(task.plannerHour) : acc, 0);
-        const newProgress = totalPlannedHours === 0 ? 0 : (completedHours / totalPlannedHours) * 100;
+        const newProgress = (completedHours / totalPlannedHours) * 100;
         setProgress(newProgress);
     }, [tasks]);
 
@@ -52,31 +52,29 @@ function FormDataDetails() {
 
     const handleSaveActualHour = async (taskId) => {
         try {
-            const actualHour = parseFloat(editedActualHour);
-            if (isNaN(actualHour)) {
-                console.error('Invalid actual hour value:', editedActualHour);
-                return;
-            }
-    
-            const response = await axios.put(`http://localhost:5000/api/tasks/${taskId}`, { actualHour });
-            if (response.status === 200) {
-                const updatedTasks = tasks.map(task => {
-                    if (task.task_id === taskId) {
-                        return { ...task, actualHour };
-                    }
-                    return task;
-                });
-                setTasks(updatedTasks);
-                setEditingTaskId(null);
-                setEditedActualHour('');
-            } else {
-                console.error('Failed to update actual hours:', response.status, response.statusText);
-            }
+          if (!taskId) {
+            console.error('Task ID is missing.');
+            return;
+          }
+      
+          const response = await axios.put(`http://localhost:5000/api/tasks/${taskId}`, { actualHour: parseFloat(editedActualHour) });
+          if (response.status === 200) {
+            const updatedTasks = tasks.map(task => {
+              if (task.task_id === taskId) {
+                return { ...task, actualHour: parseFloat(editedActualHour) };
+              }
+              return task;
+            });
+            setTasks(updatedTasks);
+            setEditingTaskId(null);
+            setEditedActualHour('');
+          } else {
+            console.error('Failed to update actual hours:', response.status, response.statusText);
+          }
         } catch (error) {
-            console.error('Error updating actual hours:', error);
+          console.error('Error updating actual hours:', error);
         }
-    };
-    
+      };
     if (!formData) {
         return <div className="form-data-details">No data available.</div>;
     }
