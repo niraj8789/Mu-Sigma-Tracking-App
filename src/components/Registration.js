@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Registration.css';
 
-const Registration = ({ handleRegister }) => {
+const Registration = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +24,6 @@ const Registration = ({ handleRegister }) => {
       if (response.ok) {
         navigate('/login'); 
       } else {
-       
         const data = await response.json();
         setError(data.error || 'Registration failed');
       }
@@ -33,7 +32,6 @@ const Registration = ({ handleRegister }) => {
       console.error('Error registering user:', error.message);
     }
   };
-  
 
   return (
     <div className="registration-container">

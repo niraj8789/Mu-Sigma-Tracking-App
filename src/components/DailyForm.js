@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom'; 
 import './DailyForm.css';
-import logo from './Musigma.png';
+import axios from 'axios';
 
 
 function DailyForm() {
@@ -47,17 +47,19 @@ function DailyForm() {
         setTasks(values);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = { name, date, cluster, resourceType, tasks };
-        const existingData = JSON.parse(localStorage.getItem('formDataList')) || [];
-        existingData.push(formData);
-        localStorage.setItem('formDataList', JSON.stringify(existingData));
-        navigate('/dashboard', { state: { formDataList: existingData } });
+        try {
+            const response = await axios.post('http://localhost:5000/api/tasks', formData); // Update with your server URL
+            if (response.status === 201) {
+                navigate('/dashboard', { state: { formDataList: response.data } });
+            }
+        } catch (error) {
+            console.error('Error submitting form:', error);
+        }
     };
     
-    
-
     return (
         <div className="daily-form">
             <div className="header">

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import moment from 'moment';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -7,25 +9,31 @@ function Dashboard() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Load data from localStorage
-        const data = localStorage.getItem('formDataList');
-        if (data) {
-            setFormDataList(JSON.parse(data));
-        }
+        // Fetch data from the API
+        const fetchData = async () => {
+            try {
+                const response = await axios.get('http://localhost:5000/api/tasks'); // Update with your server URL
+                setFormDataList(response.data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+
+        fetchData();
     }, []);
 
     const handleCardClick = (formData) => {
-        navigate(`/details/${formData.name}`, { state: { formData } });
+        navigate(`/details/${formData.id}`, { state: { formData } });
     };
 
     return (
         <div className="dashboard">
             <h1>Dashboard</h1>
             <div className="card-container">
-                {formDataList.map((formData, index) => (
-                    <div key={index} className="card" onClick={() => handleCardClick(formData)}>
+                {formDataList.map((formData) => (
+                    <div key={formData.id} className="card" onClick={() => handleCardClick(formData)}>
                         <h2>{formData.name}</h2>
-                        <p>Date: {formData.date}</p>
+                        <p>Date: {moment(formData.date).format('YYYY-MM-DD')}</p>
                         <p>Cluster: {formData.cluster}</p>
                     </div>
                 ))}

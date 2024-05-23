@@ -40,5 +40,40 @@
     "password": "Neeraj@8789",
     "cluster": "6",
     "clusterLead": "Datla"
+  },
+  {
+    "name": "Neeraj Kumar",
+    "email": "itsniraj4@gmail.com",
+    "password": "1234",
+    "cluster": "5",
+    "clusterLead": "Naveen"
+  },
+  {
+    "name": "Neeraj Kumar",
+    "email": "itsniraj4@gmail.com",
+    "password": "1234",
+    "cluster": "5",
+    "clusterLead": "Naveen"
+  },
+  {
+    "name": "Neeraj Kumar",
+    "email": "niraj.sigma2@gmail.com",
+    "password": "Neeraj@8789",
+    "cluster": "5",
+    "clusterLead": "Naveen"
+  },
+  {
+    "name": "Neeraj Kumar",
+    "email": "itsniraj4@gmail.com",
+    "password": "8789",
+    "cluster": "5",
+    "clusterLead": "Naveen"
+  },
+  {
+    "name": "Neeraj Kumar",
+    "email": "neeraj.kumar@mu-sigma.com",
+    "password": "878900",
+    "cluster": "5",
+    "clusterLead": "Naveen"
   }
 ]

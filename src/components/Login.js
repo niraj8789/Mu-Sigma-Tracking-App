@@ -22,7 +22,7 @@ const Login = ({ handleLogin, handleRegister }) => {
       if (response.ok) {
         // Login successful
         const data = await response.json();
-        handleLogin(data.user); 
+        handleLogin(data.user);
         navigate('/');
       } else {
         // Login failed
@@ -34,6 +34,8 @@ const Login = ({ handleLogin, handleRegister }) => {
       console.error('Error logging in:', error.message);
     }
   };
+  
+  
 
   const handleRegistration = () => {
     // Navigate to registration page
