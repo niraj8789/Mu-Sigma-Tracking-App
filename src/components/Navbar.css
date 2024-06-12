@@ -1,14 +1,10 @@
 .navbar {
-    background-color: #6d0707; /* Primary color */
+    background-color: #6d0707;
     color: #fff;
     padding: 10px 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Shadow for depth */
-    transition: all 0.3s ease; /* Smooth transition */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
 }
-
-/* .navbar:hover {
-    background-color: #3e0303; /* Darker shade on hover */
-
 
 .navbar-container {
     display: flex;
@@ -19,18 +15,11 @@
 .logo-container {
     display: flex;
     align-items: center;
-    margin-left: 180px !important;
 }
 
 .logo {
     width: 60px;
     height: 60px;
-}
-
-.brand-name {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-left: 10px;
 }
 
 .nav-links {
@@ -44,10 +33,15 @@
     padding: 10px 15px;
     border-radius: 5px;
     transition: background-color 0.3s ease;
+    font-weight: bold;
 }
 
 .nav-link:hover {
-    background-color: #d61313; /* Darker shade on hover */
+    background-color: #d61313;
+}
+
+.logout-container {
+    margin-left: auto;
 }
 
 .login-link {
@@ -60,51 +54,5 @@
 }
 
 .login-link:hover {
-    background-color: #283593; /* Darker shade on hover */
-}
-
-.nav-link {
-    text-decoration: none;
-    color: #fff;
-    padding: 10px 15px;
-    border-radius: 5px;
-    position: relative; /* Relative positioning for pseudo-element */
-}
-
-.nav-link::before {
-    content: ''; /* Add a pseudo-element */
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: transparent; /* Initially transparent */
-    transition: background-color 0.3s ease; /* Smooth transition for background color */
-}
-
-.nav-link:hover::before {
-    background-color: #fff; /* Change background color on hover */
-}
-
-.login-link {
-    text-decoration: none;
-    color: #fff;
-    padding: 10px 15px;
-    border-radius: 5px;
-    position: relative; /* Relative positioning for pseudo-element */
-}
-
-.login-link::before {
-    content: ''; /* Add a pseudo-element */
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: transparent; /* Initially transparent */
-    transition: background-color 0.3s ease; /* Smooth transition for background color */
-}
-
-.login-link:hover::before {
-    background-color: #fff; /* Change background color on hover */
+    background-color: #283593;
 }

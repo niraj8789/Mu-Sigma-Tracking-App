@@ -5,7 +5,8 @@ import Dashboard from './components/Dashboard';
 import Navbar from './components/Navbar';
 import FormDataDetails from './components/FormDataDetails';
 import Login from './components/Login';
-import Registration from './components/Registration'; // Import Registration component
+import Registration from './components/Registration';
+import PerformanceVisuals from './components/PerformanceVisuals'; // Import the new component
 import './App.css';
 
 function App() {
@@ -26,7 +27,6 @@ function App() {
   return (
     <Router>
       <div className="App">
-        {/* Render Navbar only if logged in */}
         {loggedIn && <Navbar loggedIn={loggedIn} handleLogout={handleLogout} />}
         <Routes>
           <Route
@@ -38,7 +38,7 @@ function App() {
             element={loggedIn ? <Dashboard /> : <Navigate to="/login" />}
           />
           <Route
-            path="/details/:name"
+            path="/task/:id"
             element={loggedIn ? <FormDataDetails /> : <Navigate to="/login" />}
           />
           <Route
@@ -47,7 +47,11 @@ function App() {
           />
           <Route
             path="/register"
-            element={<Registration />} 
+            element={<Registration />}
+          />
+          <Route
+            path="/performance"
+            element={loggedIn ? <PerformanceVisuals /> : <Navigate to="/login" />} // Add the new route
           />
         </Routes>
       </div>

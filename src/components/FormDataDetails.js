@@ -1,113 +1,146 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import './FormDataDetails.css';
-import moment from 'moment' // Make sure this file path is correct
+import moment from 'moment';
+import StatsPerformance from './PerformanceVisuals';
 
 function FormDataDetails() {
-    const { state } = useLocation();
-    const navigate = useNavigate();
-    const { formData } = state || {};
-    const [tasks, setTasks] = useState([]);
-    const [progress, setProgress] = useState(0);
-    const [editingTaskId, setEditingTaskId] = useState(null);
-    const [editedActualHour, setEditedActualHour] = useState('');
+    const { id } = useParams();
+    const [task, setTask] = useState(null);
+    const [entries, setEntries] = useState([]);
+    const [actualHours, setActualHours] = useState({});
+    const [completedTasks, setCompletedTasks] = useState({});
+    const [showStats, setShowStats] = useState(false);
 
     useEffect(() => {
-        if (formData && formData.tasks) {
-            const initializedTasks = formData.tasks.map(task => ({
-                ...task,
-                completed: false // Initialize all tasks as not completed
+        const fetchTaskDetails = async () => {
+            try {
+                const taskResponse = await axios.get(`http://localhost:5000/api/tasks/${id}`);
+                setTask(taskResponse.data);
+                setEntries(taskResponse.data.entries);
+            } catch (error) {
+                console.error('Error fetching task details:', error);
+            }
+        };
+
+        fetchTaskDetails();
+    }, [id]);
+
+    const handleInputChange = (index, event) => {
+        const { name, value, type, checked } = event.target;
+        if (type === 'checkbox') {
+            setCompletedTasks((prev) => ({
+                ...prev,
+                [index]: checked,
             }));
-            console.log('Initialized Tasks:', initializedTasks); // Add this line
-            setTasks(initializedTasks);
+        } else {
+            setActualHours((prev) => ({
+                ...prev,
+                [index]: value,
+            }));
         }
-    }, [formData]);
-
-    useEffect(() => {
-        const totalPlannedHours = tasks.reduce((acc, task) => acc + parseFloat(task.plannerHour), 0);
-        const completedHours = tasks.reduce((acc, task) => task.completed ? acc + parseFloat(task.plannerHour) : acc, 0);
-        const newProgress = (completedHours / totalPlannedHours) * 100;
-        setProgress(newProgress);
-    }, [tasks]);
-
-    const toggleTaskCompletion = (index) => {
-        setTasks(currentTasks =>
-            currentTasks.map((task, i) =>
-                i === index ? { ...task, completed: !task.completed } : task
-            )
-        );
     };
 
-    const handleEditActualHour = (taskId, actualHour) => {
-        console.log('Editing Task ID:', taskId);
-        setEditingTaskId(taskId);
-        setEditedActualHour(actualHour.toString());
-    };
-
-    const handleCancelEdit = () => {
-        setEditingTaskId(null);
-        setEditedActualHour('');
-    };
-
-    const handleSaveActualHour = async (taskId) => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         try {
-          if (!taskId) {
-            console.error('Task ID is missing.');
-            return;
-          }
-      
-          const response = await axios.put(`http://localhost:5000/api/tasks/${taskId}`, { actualHour: parseFloat(editedActualHour) });
-          if (response.status === 200) {
-            const updatedTasks = tasks.map(task => {
-              if (task.task_id === taskId) {
-                return { ...task, actualHour: parseFloat(editedActualHour) };
-              }
-              return task;
-            });
-            setTasks(updatedTasks);
-            setEditingTaskId(null);
-            setEditedActualHour('');
-          } else {
-            console.error('Failed to update actual hours:', response.status, response.statusText);
-          }
+            for (let i = 0; i < entries.length; i++) {
+                const entry = entries[i];
+                const actualHour = actualHours[i];
+                if (actualHour !== undefined) {
+                    await axios.put(`http://localhost:5000/api/tasks/${entry.id}`, { actualHour });
+                }
+            }
+            alert('Actual hours updated successfully');
         } catch (error) {
-          console.error('Error updating actual hours:', error);
+            console.error('Error updating actual hours:', error);
+            alert('Error updating actual hours');
         }
-      };
-    if (!formData) {
-        return <div className="form-data-details">No data available.</div>;
+    };
+
+    const isToday = (date) => {
+        const today = moment().startOf('day');
+        return moment(date).isSame(today, 'day');
+    };
+
+    if (!task) {
+        return <div className="loading">Loading...</div>;
     }
+
+    const totalPlannedHours = entries.reduce((total, entry) => total + entry.plannerHour, 0);
+    const totalCompletedHours = entries.reduce((total, entry, index) => {
+        if (completedTasks[index]) {
+            return total + entry.plannerHour;
+        }
+        return total;
+    }, 0);
+    const completionPercentage = (totalCompletedHours / totalPlannedHours) * 100;
 
     return (
         <div className="form-data-details">
-            <h2 className="details-heading">{formData.name}</h2>
-            <button className="back-button" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
-            <p><strong>Date : </strong>{moment(formData.date).format('YYYY-MM-DD')}</p> 
-            <p><strong>Cluster:</strong> {formData.cluster}</p>
-            <div className="progress-bar-container">
-                <div className="progress-bar" style={{ width: `${progress}%` }}></div>
-            </div>
-            <div className="task-grid">
-                {tasks.map((task, index) => (
-                    <div className={`task-card ${task.completed ? 'completed' : ''}`} key={task.task_id || index} onClick={() => toggleTaskCompletion(index)}>
-                        <p><strong>INC/CR:</strong> {task.incCr}</p>
-                        <p><strong>Product:</strong> {task.product}</p>
-                        <p><strong>Task Type:</strong> {task.taskType}</p>
-                        <p><strong>Description:</strong> {task.taskDescription}</p>
-                        {editingTaskId === task.task_id ? (
-                            <div>
-                                <input type="number" value={editedActualHour} onChange={(e) => setEditedActualHour(e.target.value)} />
-                                <button onClick={() => handleSaveActualHour(task.task_id)}>Save</button>
-                                <button onClick={handleCancelEdit}>Cancel</button>
-                            </div>
-                        ) : (
-                            <p><strong>Actual Hours (AH):</strong> {task.actualHour} <button onClick={() => handleEditActualHour(task.task_id, task.actualHour)}>Edit</button></p>
-                        )}
-                        <p><strong>Planned Hours (PH):</strong> {task.plannerHour}</p>
-                        <p><strong>Resource Type:</strong> {task.resourceType}</p>
-                    </div>
-                ))}
+            <h1 className="details-heading">Task Details for {task.name}</h1>
+            <p>Date: {moment(task.date).format('Do MMMM YYYY')}</p>
+            <p>Cluster: {task.cluster}</p>
+            <p>Resource Type: {task.resourceType}</p>
+
+            <form onSubmit={handleSubmit}>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>INC/CR</th>
+                            <th>Product</th>
+                            <th>Task Type</th>
+                            <th>Task Description</th>
+                            <th>Planner Hour</th>
+                            <th>Actual Hour</th>
+                            <th>Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {entries.map((entry, index) => (
+                            <tr key={entry.id}>
+                                <td>{entry.incCr}</td>
+                                <td>{entry.product}</td>
+                                <td>{entry.taskType}</td>
+                                <td>{entry.taskDescription}</td>
+                                <td>{entry.plannerHour}</td>
+                                <td>
+                                    <input
+                                        type="number"
+                                        name="actualHour"
+                                        value={actualHours[index] || entry.actualHour || ''}
+                                        onChange={(event) => handleInputChange(index, event)}
+                                        className="input-actual-hour"
+                                        disabled={!isToday(task.date)}
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        checked={completedTasks[index] || false}
+                                        onChange={(event) => handleInputChange(index, event)}
+                                    />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <button type="submit" className="submit-button">Update Actual Hours</button>
+            </form>
+            <button onClick={() => setShowStats(true)} className="stats-button">View Stats</button>
+            {showStats && <StatsPerformance onClose={() => setShowStats(false)} />}
+            <div className="progress">
+                <div
+                    className="progress-bar"
+                    role="progressbar"
+                    style={{ width: `${completionPercentage}%` }}
+                    aria-valuenow={completionPercentage}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                >
+                    {completionPercentage.toFixed(2)}%
+                </div>
             </div>
         </div>
     );
