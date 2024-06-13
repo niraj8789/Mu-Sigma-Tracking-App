@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import './FormDataDetails.css';
 import moment from 'moment';
-import StatsPerformance from './PerformanceVisuals';
+
 
 function FormDataDetails() {
     const { id } = useParams();
@@ -11,7 +11,6 @@ function FormDataDetails() {
     const [entries, setEntries] = useState([]);
     const [actualHours, setActualHours] = useState({});
     const [completedTasks, setCompletedTasks] = useState({});
-    const [showStats, setShowStats] = useState(false);
 
     useEffect(() => {
         const fetchTaskDetails = async () => {
@@ -28,7 +27,7 @@ function FormDataDetails() {
     }, [id]);
 
     const handleInputChange = (index, event) => {
-        const { name, value, type, checked } = event.target;
+        const { value, type, checked } = event.target;
         if (type === 'checkbox') {
             setCompletedTasks((prev) => ({
                 ...prev,
@@ -128,8 +127,6 @@ function FormDataDetails() {
                 </table>
                 <button type="submit" className="submit-button">Update Actual Hours</button>
             </form>
-            <button onClick={() => setShowStats(true)} className="stats-button">View Stats</button>
-            {showStats && <StatsPerformance onClose={() => setShowStats(false)} />}
             <div className="progress">
                 <div
                     className="progress-bar"

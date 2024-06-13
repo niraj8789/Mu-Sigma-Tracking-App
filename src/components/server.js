@@ -222,85 +222,47 @@ app.put('/api/tasks/:id', async (req, res) => {
   }
 });
 // Route to fetch metrics
-
-// Route to fetch all tasks with enhanced error handling and data aggregation
-app.get('/api/tasks', async (req, res) => {
+app.get('/api/stats/weekly', async (req, res) => {
   try {
-    const { name, date } = req.query;
-
-    let query = `SELECT 
-                  t.id AS task_id, 
-                  t.name AS task_name, 
-                  t.date, 
-                  t.cluster, 
-                  t.resourceType,
-                  te.incCr,
-                  te.product,
-                  te.taskType,
-                  te.taskDescription,
-                  te.actualHour,
-                  te.plannerHour
-                FROM Task t
-                LEFT JOIN Tasks te ON t.id = te.task_id`;
-
-    const params = [];
-    const queryParams = {};
-
-    if (name) {
-      params.push('t.name LIKE @name');
-      queryParams.name = `%${name}%`;
-    }
-    if (date) {
-      params.push('CONVERT(date, t.date, 101) = @date');
-      queryParams.date = date;
-    }
-
-    if (params.length > 0) {
-      query += ` WHERE ${params.join(' AND ')}`;
-    }
-
     const pool = await poolPromise;
-    const request = pool.request();
-
-    Object.keys(queryParams).forEach((key) => {
-      request.input(key, queryParams[key]);
-    });
-
-    const result = await request.query(query);
-
-    if (result.recordset.length === 0) {
-      return res.status(404).send('No tasks found');
-    }
-
-    const tasks = {};
-    result.recordset.forEach((row) => {
-      if (!tasks[row.task_id]) {
-        tasks[row.task_id] = {
-          id: row.task_id,
-          name: row.task_name,
-          date: row.date,
-          cluster: row.cluster,
-          resourceType: row.resourceType,
-          tasks: [],
-        };
-      }
-      tasks[row.task_id].tasks.push({
-        incCr: row.incCr,
-        product: row.product,
-        taskType: row.taskType,
-        taskDescription: row.taskDescription,
-        actualHour: row.actualHour,
-        plannerHour: row.plannerHour,
-      });
-    });
-
-    const taskList = Object.values(tasks);
-    res.json(taskList);
+    const result = await pool.request().query(`
+      SELECT
+        t.name,
+        SUM(ts.plannerHour) AS totalPlannerHour,
+        SUM(ts.actualHour) AS totalActualHour
+      FROM Task t
+      JOIN Tasks ts ON t.id = ts.task_id
+      WHERE t.date >= DATEADD(day, -7, GETDATE())
+      GROUP BY t.name
+    `);
+    res.json(result.recordset);
   } catch (err) {
-    console.error('Error fetching tasks:', err);
-    res.status(500).send('Error fetching tasks');
+    console.error('Error fetching weekly statistics:', err);
+    res.status(500).send('Error fetching weekly statistics');
   }
 });
+
+// Endpoint to get monthly statistics
+app.get('/api/stats/monthly', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request().query(`
+      SELECT
+        t.name,
+        SUM(ts.plannerHour) AS totalPlannerHour,
+        SUM(ts.actualHour) AS totalActualHour
+      FROM Task t
+      JOIN Tasks ts ON t.id = ts.task_id
+      WHERE MONTH(t.date) = MONTH(GETDATE()) AND YEAR(t.date) = YEAR(GETDATE())
+      GROUP BY t.name
+    `);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error fetching monthly statistics:', err);
+    res.status(500).send('Error fetching monthly statistics');
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
