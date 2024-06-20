@@ -1,17 +1,28 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { sql, poolPromise } = require('./db'); 
+const { sql, poolPromise } = require('./db');
+const nodemailer = require('nodemailer');
+const cron = require('node-cron');
 const app = express();
 const port = 5000;
 const cors = require('cors');
 app.use(cors());
 app.use(express.json());
 
+// Email service configuration
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'niraj.sigma2@gmail.com',
+    pass: 'zlvt rqiy njlj szgp'
+  }
+});
+
 app.get('/', (req, res) => {
   res.send('Welcome to the API!');
 });
 
-// Route to register a new user
+// Register a new user
 app.post('/api/register', async (req, res) => {
   const { name, email, password, cluster, clusterLead } = req.body;
   if (!name || !email || !password || !cluster || !clusterLead) {
@@ -42,7 +53,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Route to log in a user
+// Log in a user
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -67,7 +78,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Route to create a new task
+// Create a new task
 app.post('/api/tasks', async (req, res) => {
   const { name, date, cluster, resourceType, tasks } = req.body;
   try {
@@ -102,7 +113,7 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
-// Route to fetch all tasks
+// Fetch all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -151,7 +162,7 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
-// Route to fetch a single task by ID
+// Fetch a single task by ID
 app.get('/api/tasks/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -177,14 +188,13 @@ app.get('/api/tasks/:id', async (req, res) => {
   }
 });
 
-// Route to update a task's actual hours
+// Update a task's actual hours
 app.put('/api/tasks/:id', async (req, res) => {
   let { id } = req.params;
   const { actualHour } = req.body;
 
   // Validate actualHour
   if (actualHour === undefined || isNaN(actualHour)) {
-    console.log('Invalid actual hour value:', actualHour);
     return res.status(400).send('Invalid actual hour value');
   }
 
@@ -193,35 +203,28 @@ app.put('/api/tasks/:id', async (req, res) => {
 
   // Validate id
   if (isNaN(id)) {
-    console.log('Invalid task ID:', id);
     return res.status(400).send('Invalid task ID');
   }
 
   try {
     const pool = await poolPromise;
-    console.log('Received request to update task with id:', id);
-    console.log('Actual hour to update:', actualHour);
-
     const result = await pool
       .request()
       .input('id', sql.Int, id)
       .input('actualHour', sql.Float, actualHour)
       .query('UPDATE Tasks SET actualHour = @actualHour WHERE id = @id');
 
-    console.log('SQL update result:', result);
-
     if (result.rowsAffected[0] === 0) {
-      console.log('Task not found for id:', id);
       return res.status(404).send('Task not found');
     }
-    console.log('Task updated successfully for id:', id);
     return res.status(200).send('Task updated successfully');
   } catch (err) {
     console.error('Error updating task:', err);
     return res.status(500).send('Error updating task');
   }
 });
-// Route to fetch metrics
+
+// Fetch weekly statistics
 app.get('/api/stats/weekly', async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -242,7 +245,7 @@ app.get('/api/stats/weekly', async (req, res) => {
   }
 });
 
-// Endpoint to get monthly statistics
+// Fetch monthly statistics
 app.get('/api/stats/monthly', async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -260,6 +263,41 @@ app.get('/api/stats/monthly', async (req, res) => {
   } catch (err) {
     console.error('Error fetching monthly statistics:', err);
     res.status(500).send('Error fetching monthly statistics');
+  }
+});
+
+// Cron job to check for missing tasks and send alert emails
+cron.schedule('55 16 * * *', async () => {  // Runs every day at 4:34 PM IST
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request().query(`
+      SELECT u.email, u.name
+      FROM Users u
+      LEFT JOIN Task t ON u.id = t.id AND t.date = CAST(GETDATE() AS DATE)
+      WHERE t.id IS NULL
+    `);
+    const missingTasksUsers = result.recordset;
+
+    for (const user of missingTasksUsers) {
+      // Email options
+      const mailOptions = {
+        from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
+        to: user.email,
+        cc: 'itsniraj4@gmail.com',
+        subject: 'Daily Task Reminder',
+        text: `Hi ${user.name},\n\nYou have not submitted your Daily Task records. Please don't forget to fill it before 9 PM.\n\nThanks`
+      };
+
+      // Send email
+      await transporter.sendMail(mailOptions);
+      console.log(`Reminder email sent to: ${user.email}`);
+    }
+
+    if (missingTasksUsers.length === 0) {
+      console.log('All users have submitted their tasks for today.');
+    }
+  } catch (err) {
+    console.error('Error checking for missing tasks:', err);
   }
 });
 
