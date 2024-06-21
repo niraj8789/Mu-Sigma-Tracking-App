@@ -285,7 +285,7 @@ cron.schedule('55 16 * * *', async () => {  // Runs every day at 4:34 PM IST
         to: user.email,
         cc: 'itsniraj4@gmail.com',
         subject: 'Daily Task Reminder',
-        text: `Hi ${user.name},\n\nYou have not submitted your Daily Task records. Please don't forget to fill it before 9 PM.\n\nThanks`
+        text: `Hi ${user.name},\n\nYou have not submitted your Daily Task records. Please don't forget to fill it before 6 PM.\n\nThanks`
       };
 
       // Send email
