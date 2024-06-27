@@ -18,11 +18,27 @@ function UserDetails() {
     return (
         <div className="user-details">
             <h1>User Details</h1>
-            <p><strong>Name:</strong> {user.name}</p>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Cluster:</strong> {user.cluster}</p>
-            <p><strong>Role:</strong> {user.role}</p>
-            {/* <button onClick={handleChangePassword}>Change Password</button> */}
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Name:</th>
+                        <td>{user.name}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{user.email}</td>
+                    </tr>
+                    <tr>
+                        <th>Cluster:</th>
+                        <td>{user.cluster}</td>
+                    </tr>
+                    <tr>
+                        <th>Role:</th>
+                        <td>{user.role}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button onClick={handleChangePassword}>Change Password</button>
         </div>
     );
 }
