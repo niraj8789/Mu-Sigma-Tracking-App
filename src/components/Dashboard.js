@@ -3,81 +3,135 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Dashboard.css';
 import moment from 'moment';
+import { useAuth } from '../context/AuthContext';
 
 function Dashboard() {
-    const [tasks, setTasks] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [tasksPerPage, setTasksPerPage] = useState(10);
-    const navigate = useNavigate();
+  const [tasks, setTasks] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tasksPerPage, setTasksPerPage] = useState(10);
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-    useEffect(() => {
-        const fetchTasks = async () => {
-            try {
-                const response = await axios.get('http://localhost:5000/api/tasks');
-                const sortedTasks = response.data.sort((a, b) => new Date(b.date) - new Date(a.date));
-                setTasks(sortedTasks);
-            } catch (error) {
-                console.error('Error fetching tasks:', error);
-            }
-        };
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const token = localStorage.getItem('authToken');
 
-        fetchTasks();
-    }, []);
+      if (!token) {
+        navigate('/login');
+        return;
+      }
 
-    const handleCardClick = (id) => {
-        navigate(`/task/${id}`);
+      try {
+        const response = await axios.get('http://localhost:5000/api/tasks', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const sortedTasks = response.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        console.log('Fetched tasks:', sortedTasks); // Debug log
+        setTasks(sortedTasks);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('authToken');
+          navigate('/login');
+        }
+      }
     };
 
-    const handlePageChange = (pageNumber) => {
-        setCurrentPage(pageNumber);
-    };
+    fetchTasks();
+  }, [navigate]);
 
-    const handleTasksPerPageChange = (event) => {
-        setTasksPerPage(Number(event.target.value));
-        setCurrentPage(1); // Reset to first page when changing tasks per page
-    };
+  const handleCardClick = (id) => {
+    navigate(`/task/${id}`);
+  };
 
-    const indexOfLastTask = currentPage * tasksPerPage;
-    const indexOfFirstTask = indexOfLastTask - tasksPerPage;
-    const currentTasks = tasks.slice(indexOfFirstTask, indexOfLastTask);
-    const totalPages = Math.ceil(tasks.length / tasksPerPage);
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
-    return (
-        <div className="dashboard">
-            <h1 className="dashboard-heading">Task Dashboard</h1>
-            <div className="controls">
-                <label>
-                    Tasks per page:
-                    <select value={tasksPerPage} onChange={handleTasksPerPageChange}>
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                    </select>
-                </label>
-            </div>
-            <div className="card-container">
-                {currentTasks.map((task) => (
-                    <div key={task.id} className="card" onClick={() => handleCardClick(task.id)}>
-                        <h2>{task.name}</h2>
-                        <p>Date: {moment(task.date).format('Do MMMM YYYY')}</p>
-                        <p><strong>Cluster:</strong> {task.cluster}</p>
-                        <p><strong>Resource Type:</strong> {task.resourceType}</p>
-                    </div>
-                ))}
-            </div>
-            <div className="pagination">
-                {Array.from({ length: totalPages }, (_, index) => (
-                    <button
-                        key={index + 1}
-                        onClick={() => handlePageChange(index + 1)}
-                        className={currentPage === index + 1 ? 'active' : ''}
-                    >
-                        {index + 1}
-                    </button>
-                ))}
-            </div>
+  const handleTasksPerPageChange = (event) => {
+    setTasksPerPage(Number(event.target.value));
+    setCurrentPage(1);
+  };
+
+  const indexOfLastTask = currentPage * tasksPerPage;
+  const indexOfFirstTask = indexOfLastTask - tasksPerPage;
+  const currentTasks = tasks.slice(indexOfFirstTask, indexOfLastTask);
+  const totalPages = Math.ceil(tasks.length / tasksPerPage);
+
+  const renderTasks = () => {
+    if (!user) {
+      return <p>Loading...</p>;
+    }
+
+    if (user.role === 'Manager') {
+      return currentTasks.map((task) => (
+        <div key={task.id} className="card" onClick={() => handleCardClick(task.id)}>
+          <h2>{task.name}</h2>
+          <p>Date: {moment(task.date).format('Do MMMM YYYY')}</p>
+          <p><strong>Cluster:</strong> {task.cluster}</p>
+          <p><strong>Resource Type:</strong> {task.resourceType}</p>
         </div>
-    );
+      ));
+    }
+
+    if (user.role === 'Cluster Lead') {
+      return currentTasks.filter(task => task.cluster === user.cluster).map((task) => (
+        <div key={task.id} className="card" onClick={() => handleCardClick(task.id)}>
+          <h2>{task.name}</h2>
+          <p>Date: {moment(task.date).format('Do MMMM YYYY')}</p>
+          <p><strong>Cluster:</strong> {task.cluster}</p>
+          <p><strong>Resource Type:</strong> {task.resourceType}</p>
+        </div>
+      ));
+    }
+
+    if (user.role === 'Team Member') {
+      const filteredTasks = currentTasks.filter(task => task.assignedTo === user.email);
+      console.log('Filtered tasks for Team Member:', filteredTasks); // Debug log
+      return filteredTasks.map((task) => (
+        <div key={task.id} className="card" onClick={() => handleCardClick(task.id)}>
+          <h2>{task.name}</h2>
+          <p>Date: {moment(task.date).format('Do MMMM YYYY')}</p>
+          <p><strong>Cluster:</strong> {task.cluster}</p>
+          <p><strong>Resource Type:</strong> {task.resourceType}</p>
+        </div>
+      ));
+    }
+
+    return <p>You do not have access to view these tasks.</p>;
+  };
+
+  return (
+    <div className="dashboard">
+      <h1 className="dashboard-heading">Task Dashboard</h1>
+      <div className="controls">
+        <label>
+          Tasks per page:
+          <select value={tasksPerPage} onChange={handleTasksPerPageChange}>
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+        </label>
+      </div>
+      <div className="card-container">
+        {renderTasks()}
+      </div>
+      <div className="pagination">
+        {Array.from({ length: totalPages }, (_, index) => (
+          <button
+            key={index + 1}
+            onClick={() => handlePageChange(index + 1)}
+            className={currentPage === index + 1 ? 'active' : ''}
+          >
+            {index + 1}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default Dashboard;

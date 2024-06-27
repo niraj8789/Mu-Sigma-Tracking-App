@@ -6,15 +6,21 @@ const cron = require('node-cron');
 const app = express();
 const port = 5000;
 const cors = require('cors');
+const { authorize } = require('./Middleware/auth');
 app.use(cors());
 app.use(express.json());
+const crypto = require('crypto');
+
+const tokens = {};
+const otpStore = {};
+const jwt = require('jsonwebtoken');
 
 // Email service configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'niraj.sigma2@gmail.com',
-    pass: 'zlvt rqiy njlj szgp'
+    pass: 'vajc ogqi yvjk nlve'
   }
 });
 
@@ -22,10 +28,87 @@ app.get('/', (req, res) => {
   res.send('Welcome to the API!');
 });
 
+const generateOtp = () => {
+  return crypto.randomBytes(3).toString('hex'); // Generates a random 6-character OTP
+};
+
+// Send OTP endpoint
+app.post('/api/send-otp', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const pool = await poolPromise;
+    const result = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT * FROM Users WHERE email = @email');
+
+    if (result.recordset.length === 0) {
+      return res.status(404).send('User not found');
+    }
+
+    const otp = generateOtp();
+    otpStore[email] = otp;
+
+    const mailOptions = {
+      from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
+      to: email,
+      subject: 'Your OTP Code',
+      text: `Your OTP code is ${otp}`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        return res.status(500).send('Error sending OTP');
+      }
+      res.status(200).send('OTP sent successfully');
+    });
+  } catch (err) {
+    console.error('Error sending OTP:', err);
+    res.status(500).send('Error sending OTP');
+  }
+});
+
+// Change password endpoint
+app.post('/api/change-password', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  console.log('Received request for change password:', { email, otp, newPassword });
+
+  try {
+    if (!email || !otp || !newPassword) {
+      return res.status(400).send('All fields are required');
+    }
+
+    if (otpStore[email] !== otp) {
+      console.error('Invalid OTP:', { email, otp, storedOtp: otpStore[email] });
+      return res.status(400).send('Invalid OTP');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const pool = await poolPromise;
+    const result = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .input('password', sql.NVarChar, hashedPassword)
+      .query('UPDATE Users SET password = @password WHERE email = @email');
+
+    if (result.rowsAffected[0] === 0) {
+      console.error('No user found to update password for:', email);
+      return res.status(404).send('User not found');
+    }
+
+    delete otpStore[email]; // Clear OTP after password change
+
+    res.status(200).send('Password changed successfully');
+  } catch (err) {
+    console.error('Error changing password:', err);
+    res.status(500).send('Error changing password');
+  }
+});
+
 // Register a new user
 app.post('/api/register', async (req, res) => {
-  const { name, email, password, cluster, clusterLead } = req.body;
-  if (!name || !email || !password || !cluster || !clusterLead) {
+  const { name, email, password, cluster, clusterLead, role } = req.body;
+  if (!name || !email || !password || !cluster || !clusterLead || !role) {
     return res.status(400).send('All fields are required');
   }
   try {
@@ -45,7 +128,9 @@ app.post('/api/register', async (req, res) => {
       .input('password', sql.NVarChar, hashedPassword)
       .input('cluster', sql.NVarChar, cluster)
       .input('clusterLead', sql.NVarChar, clusterLead)
-      .query('INSERT INTO Users (name, email, password, cluster, clusterLead) VALUES (@name, @email, @password, @cluster, @clusterLead)');
+      .input('role', sql.NVarChar, role)
+      .query('INSERT INTO Users (name, email, password, cluster, clusterLead, role) VALUES (@name, @email, @password, @cluster, @clusterLead, @role)');
+    console.log(`User registered with role: ${role}`); // Debug log
     res.status(201).send('User registered');
   } catch (err) {
     console.error('Error registering user:', err);
@@ -65,7 +150,13 @@ app.post('/api/login', async (req, res) => {
     if (result.recordset.length === 1) {
       const user = result.recordset[0];
       if (await bcrypt.compare(password, user.password)) {
-        res.json({ user });
+        const token = jwt.sign(
+          { id: user.id, name: user.name, email: user.email, cluster: user.cluster, role: user.role },
+          'your_jwt_secret_key',
+          { expiresIn: '1h' }
+        );
+        console.log(`User logged in with role: ${user.role}`); // Debug log
+        res.json({ token, user: { id: user.id, name: user.name, email: user.email, cluster: user.cluster, role: user.role } });
       } else {
         res.status(401).json({ error: 'Invalid email or password' });
       }
@@ -78,9 +169,10 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+
 // Create a new task
 app.post('/api/tasks', async (req, res) => {
-  const { name, date, cluster, resourceType, tasks } = req.body;
+  const { name, date, cluster, resourceType, tasks, assignedTo } = req.body; // Ensure assignedTo is destructured
   try {
     const pool = await poolPromise;
     const result = await pool
@@ -89,9 +181,9 @@ app.post('/api/tasks', async (req, res) => {
       .input('date', sql.Date, date)
       .input('cluster', sql.NVarChar, cluster)
       .input('resourceType', sql.NVarChar, resourceType)
-      .query(`INSERT INTO Task (name, date, cluster, resourceType)
-              OUTPUT INSERTED.id
-              VALUES (@name, @date, @cluster, @resourceType)`);
+      .input('assignedTo', sql.NVarChar, assignedTo) // Include assignedTo field
+      .query(`INSERT INTO Task (name, date, cluster, resourceType, assignedTo) OUTPUT INSERTED.id VALUES (@name, @date, @cluster, @resourceType, @assignedTo)`);
+    
     const taskId = result.recordset[0].id;
     for (const task of tasks) {
       await pool
@@ -101,61 +193,57 @@ app.post('/api/tasks', async (req, res) => {
         .input('product', sql.NVarChar, task.product)
         .input('taskType', sql.NVarChar, task.taskType)
         .input('taskDescription', sql.NVarChar, task.taskDescription)
-        .input('actualHour', sql.Float, task.actualHour)
         .input('plannerHour', sql.Float, task.plannerHour)
-        .query(`INSERT INTO Tasks (task_id, incCr, product, taskType, taskDescription, actualHour, plannerHour)
-                VALUES (@task_id, @incCr, @product, @taskType, @taskDescription, @actualHour, @plannerHour)`);
+        .query(`INSERT INTO Tasks (task_id, incCr, product, taskType, taskDescription, plannerHour) VALUES (@task_id, @incCr, @product, @taskType, @taskDescription, @plannerHour)`);
     }
+    
     res.status(201).send('Task created successfully');
   } catch (err) {
-    console.error('Error submitting task:', err);
-    res.status(500).send('Error submitting task');
+    console.error('Error creating task:', err);
+    res.status(500).send('Error creating task');
   }
 });
 
+
 // Fetch all tasks
-app.get('/api/tasks', async (req, res) => {
+app.get('/api/tasks', authorize(['Manager', 'Cluster Lead', 'Team Member']), async (req, res) => {
   try {
+    const { role, cluster, email } = req.user;
     const pool = await poolPromise;
+
+    let query = `
+      SELECT 
+        t.id AS task_id, 
+        t.name AS task_name, 
+        t.date, 
+        t.cluster, 
+        t.resourceType,
+        t.assignedTo
+      FROM Task t
+    `;
+
+    if (role === 'Team Member') {
+      query += ` WHERE t.assignedTo = @userEmail`;
+    } else if (role === 'Cluster Lead') {
+      query += ` WHERE t.cluster = @userCluster`;
+    }
+
     const result = await pool
       .request()
-      .query(`SELECT 
-                t.id AS task_id, 
-                t.name AS task_name, 
-                t.date, 
-                t.cluster, 
-                t.resourceType,
-                te.incCr,
-                te.product,
-                te.taskType,
-                te.taskDescription,
-                te.actualHour,
-                te.plannerHour
-              FROM Task t
-              LEFT JOIN Tasks te ON t.id = te.task_id`);
-    const tasks = {};
-    result.recordset.forEach(row => {
-      if (!tasks[row.task_id]) {
-        tasks[row.task_id] = {
-          id: row.task_id,
-          name: row.task_name,
-          date: row.date,
-          cluster: row.cluster,
-          resourceType: row.resourceType,
-          tasks: []
-        };
-      }
-      tasks[row.task_id].tasks.push({
-        incCr: row.incCr,
-        product: row.product,
-        taskType: row.taskType,
-        taskDescription: row.taskDescription,
-        actualHour: row.actualHour,
-        plannerHour: row.plannerHour
-      });
-    });
-    const taskList = Object.values(tasks);
-    res.json(taskList);
+      .input('userEmail', sql.NVarChar, email)
+      .input('userCluster', sql.NVarChar, cluster)
+      .query(query);
+
+    const tasks = result.recordset.map(row => ({
+      id: row.task_id,
+      name: row.task_name,
+      date: row.date,
+      cluster: row.cluster,
+      resourceType: row.resourceType,
+      assignedTo: row.assignedTo
+    }));
+
+    res.json(tasks);
   } catch (err) {
     console.error('Error fetching tasks:', err);
     res.status(500).send('Error fetching tasks');
@@ -267,11 +355,13 @@ app.get('/api/stats/monthly', async (req, res) => {
 });
 
 // Cron job to check for missing tasks and send alert emails
-cron.schedule('55 16 * * *', async () => {  // Runs every day at 4:34 PM IST
+cron.schedule('40 16 * * *', async () => {  // Runs every day at 4:34 PM IST
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
-      SELECT u.email, u.name
+      SELECT u.email, u.name, u.cluster,
+             (SELECT email FROM Users WHERE role = 'Manager') AS managerEmail,
+             (SELECT email FROM Users WHERE role = 'Cluster Lead' AND cluster = u.cluster) AS clusterLeadEmail
       FROM Users u
       LEFT JOIN Task t ON u.id = t.id AND t.date = CAST(GETDATE() AS DATE)
       WHERE t.id IS NULL
@@ -283,7 +373,7 @@ cron.schedule('55 16 * * *', async () => {  // Runs every day at 4:34 PM IST
       const mailOptions = {
         from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
         to: user.email,
-        cc: 'itsniraj4@gmail.com',
+        cc: [user.managerEmail, user.clusterLeadEmail, 'itsniraj4@gmail.com'].filter(Boolean).join(', '),
         subject: 'Daily Task Reminder',
         text: `Hi ${user.name},\n\nYou have not submitted your Daily Task records. Please don't forget to fill it before 6 PM.\n\nThanks`
       };
@@ -301,6 +391,38 @@ cron.schedule('55 16 * * *', async () => {  // Runs every day at 4:34 PM IST
   }
 });
 
+app.get('/api/users', authorize(['Manager']), async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request().query('SELECT id, name, email, cluster, role FROM Users');
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).send('Error fetching users');
+  }
+});
+
+// In server.js
+app.put('/api/users/:id/role', authorize(['Manager']), async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  try {
+    const pool = await poolPromise;
+    await pool
+      .request()
+      .input('id', sql.Int, id)
+      .input('role', sql.NVarChar, role)
+      .query('UPDATE Users SET role = @role WHERE id = @id');
+    res.send('User role updated successfully');
+  } catch (err) {
+    console.error('Error updating role:', err);
+    res.status(500).send('Error updating role');
+  }
+});
+
+
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
+

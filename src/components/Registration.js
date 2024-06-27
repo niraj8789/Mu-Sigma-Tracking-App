@@ -8,6 +8,7 @@ const Registration = () => {
   const [password, setPassword] = useState('');
   const [cluster, setCluster] = useState('');
   const [clusterLead, setClusterLead] = useState('');
+  const [role, setRole] = useState('Team Member');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -19,7 +20,7 @@ const Registration = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password, cluster, clusterLead }),
+        body: JSON.stringify({ name, email, password, cluster, clusterLead, role }),
       });
       if (response.ok) {
         navigate('/login'); 
@@ -81,6 +82,18 @@ const Registration = () => {
             onChange={(e) => setClusterLead(e.target.value)}
             className="form-control"
           />
+        </div>
+        <div className="form-group">
+          <label>Role:</label>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="form-control"
+          >
+            <option value="Team Member">Team Member</option>
+            <option value="Cluster Lead">Cluster Lead</option>
+            <option value="Manager">Manager</option>
+          </select>
         </div>
         {error && <div className="error-message">{error}</div>}
         <button type="submit" className="btn-submit">

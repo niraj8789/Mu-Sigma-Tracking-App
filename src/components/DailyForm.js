@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import './DailyForm.css';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 function DailyForm() {
     const [name, setName] = useState('');
@@ -20,8 +21,14 @@ function DailyForm() {
         }
     ]);
     const [showPopup, setShowPopup] = useState(false);
-
+    const { user } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) {
+            setName(user.name); // Automatically set the user's name
+        }
+    }, [user]);
 
     const handleInputChange = (index, event) => {
         const values = [...tasks];
@@ -62,7 +69,7 @@ function DailyForm() {
         if (missing.length > 0) {
             setShowPopup(true);
         } else {
-            const formData = { name, date, cluster, resourceType, tasks };
+            const formData = { name, date, cluster, resourceType, tasks, assignedTo: user.email }; // Ensure assignedTo is included
             try {
                 const response = await axios.post('http://localhost:5000/api/tasks', formData);
                 if (response.status === 201) {
@@ -86,6 +93,7 @@ function DailyForm() {
                         placeholder="Your Name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
+                        readOnly // Make the name field read-only as it's populated automatically
                     />
                     <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                     <select value={cluster} onChange={(e) => setCluster(e.target.value)}>
@@ -145,7 +153,6 @@ function DailyForm() {
                                         <option value="Service Governance">Service Governance</option>
                                         <option value="Internal Dev Connect">Internal Dev Connect</option>
                                         <option value="KT & Onboarding">KT & Onboarding</option>
-
                                     </select>
                                 </td>
                                 <td>

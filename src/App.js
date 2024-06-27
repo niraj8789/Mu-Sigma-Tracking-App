@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import DailyForm from './components/DailyForm';
 import Dashboard from './components/Dashboard';
@@ -6,56 +6,48 @@ import Navbar from './components/Navbar';
 import FormDataDetails from './components/FormDataDetails';
 import Login from './components/Login';
 import Registration from './components/Registration';
-import PerformanceVisuals from './components/PerformanceVisuals'; // Import the new component
+import PerformanceVisuals from './components/PerformanceVisuals';
+import UserControl from './components/userControl'; 
+import UserDetails from './components/UserDetails'; 
+import ChangePassword from './components/ChangePassword'; 
+import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
-function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
+const ProtectedRoute = ({ element }) => {
+  const { user } = useAuth();
+  if (user === undefined) return null; // Avoid destructuring if user is undefined
+  return user ? element : <Navigate to="/login" />;
+};
 
-  const handleLogin = (userData) => {
-    console.log(userData);
-    setUser(userData);
-    setLoggedIn(true);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setLoggedIn(false);
-  };
-
+const WrapperComponent = ({ element }) => {
+  const { user } = useAuth();
   return (
-    <Router>
-      <div className="App">
-        {loggedIn && <Navbar loggedIn={loggedIn} handleLogout={handleLogout} />}
-        <Routes>
-          <Route
-            path="/"
-            element={loggedIn ? <DailyForm /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/dashboard"
-            element={loggedIn ? <Dashboard /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/task/:id"
-            element={loggedIn ? <FormDataDetails /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/login"
-            element={<Login handleLogin={handleLogin} />}
-          />
-          <Route
-            path="/register"
-            element={<Registration />}
-          />
-          <Route
-            path="/performance"
-            element={loggedIn ? <PerformanceVisuals /> : <Navigate to="/login" />} // Add the new route
-          />
-        </Routes>
-      </div>
-    </Router>
+    <>
+      {user && <Navbar />}
+      {element}
+    </>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<ProtectedRoute element={<WrapperComponent element={<DailyForm />} />} />} />
+            <Route path="/dashboard" element={<ProtectedRoute element={<WrapperComponent element={<Dashboard />} />} />} />
+            <Route path="/task/:id" element={<ProtectedRoute element={<WrapperComponent element={<FormDataDetails />} />} />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Registration />} />
+            <Route path="/performance" element={<ProtectedRoute element={<WrapperComponent element={<PerformanceVisuals />} />} />} />
+            <Route path="/user-control" element={<ProtectedRoute element={<WrapperComponent element={<UserControl />} />} />} />
+            <Route path="/view-details" element={<ProtectedRoute element={<WrapperComponent element={<UserDetails />} />} />} />
+            <Route path="/change-password" element={<ProtectedRoute element={<WrapperComponent element={<ChangePassword />} />} />} />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 
