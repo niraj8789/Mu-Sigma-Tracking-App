@@ -8,7 +8,10 @@ import { useAuth } from '../context/AuthContext';
 
 function DailyForm() {
     const [name, setName] = useState('');
-    const [date, setDate] = useState('');
+    const [date, setDate] = useState(() => {
+        const today = new Date();
+        return today.toISOString().split('T')[0]; // Format to YYYY-MM-DD
+    });
     const [cluster, setCluster] = useState('');
     const [resourceType, setResourceType] = useState('');
     const [tasks, setTasks] = useState([
@@ -95,7 +98,7 @@ function DailyForm() {
                         onChange={(e) => setName(e.target.value)}
                         readOnly // Make the name field read-only as it's populated automatically
                     />
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                    <input type="date" value={date} readOnly />
                     <select value={cluster} onChange={(e) => setCluster(e.target.value)}>
                         <option value="">Select Cluster</option>
                         {Array.from({ length: 10 }, (_, i) => (

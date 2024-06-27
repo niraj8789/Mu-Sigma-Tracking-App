@@ -8,7 +8,9 @@ import { useAuth } from '../context/AuthContext';
 function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [tasksPerPage, setTasksPerPage] = useState(10);
+  const [tasksPerPage, setTasksPerPage] = useState(
+    Number(localStorage.getItem('tasksPerPage')) || 10
+  );
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -51,7 +53,9 @@ function Dashboard() {
   };
 
   const handleTasksPerPageChange = (event) => {
-    setTasksPerPage(Number(event.target.value));
+    const newTasksPerPage = Number(event.target.value);
+    setTasksPerPage(newTasksPerPage);
+    localStorage.setItem('tasksPerPage', newTasksPerPage);
     setCurrentPage(1);
   };
 
@@ -110,8 +114,8 @@ function Dashboard() {
         <label>
           Tasks per page:
           <select value={tasksPerPage} onChange={handleTasksPerPageChange}>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
+            <option value={4}>4</option>
+            <option value={8}>8</option>
             <option value={20}>20</option>
           </select>
         </label>
