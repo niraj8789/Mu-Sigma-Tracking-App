@@ -1,21 +1,24 @@
-.performance-analytics {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-  }
-  
-  .filters {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  
-  .charts {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-  }
-  
-  .insights {
-    margin-top: 20px;
-  }
-  
+/* Performance.css */
+.performance {
+  padding: 20px;
+}
+
+h2 {
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: left;
+}
+
+th {
+  background-color: #f4f4f4;
+}

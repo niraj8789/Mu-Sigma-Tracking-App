@@ -10,6 +10,8 @@ const { authorize } = require('./Middleware/auth');
 app.use(cors());
 app.use(express.json());
 const crypto = require('crypto');
+const { Parser } = require('json2csv');
+const moment = require('moment');
 
 const tokens = {};
 const otpStore = {};
@@ -24,13 +26,30 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Welcome to the API!');
-});
+const sendOtpEmail = (email, otp) => {
+  const mailOptions = {
+    from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
+    to: email,
+    subject: 'Your OTP for Password Reset',
+    text: `Your OTP for password reset is ${otp}`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+    } else {
+      console.log('Email sent:', info.response);
+    }
+  });
+};
 
 const generateOtp = () => {
   return crypto.randomBytes(3).toString('hex'); // Generates a random 6-character OTP
 };
+
+app.get('/', (req, res) => {
+  res.send('Welcome to the API!');
+});
 
 // Send OTP endpoint
 app.post('/api/send-otp', async (req, res) => {
@@ -65,6 +84,54 @@ app.post('/api/send-otp', async (req, res) => {
   } catch (err) {
     console.error('Error sending OTP:', err);
     res.status(500).send('Error sending OTP');
+  }
+});
+
+app.post('/api/request-password-reset', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const pool = await poolPromise;
+    const result = await pool
+      .request()
+      .input('email', sql.VarChar, email)
+      .query('SELECT * FROM Users WHERE email = @email');
+    if (result.recordset.length === 1) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate OTP
+      otpStore[email] = otp; // Store OTP
+      console.log(`OTP for ${email}: ${otp}`); // Debug log
+
+      // Send OTP to user's email
+      sendOtpEmail(email, otp);
+
+      res.status(200).send('OTP sent to email');
+    } else {
+      res.status(404).send('Email not found');
+    }
+  } catch (err) {
+    console.error('Error requesting password reset:', err);
+    res.status(500).send('Error requesting password reset');
+  }
+});
+
+app.post('/api/reset-password', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  try {
+    if (otpStore[email] && otpStore[email] === otp) {
+      const hashedPassword = await bcrypt.hash(newPassword, 10); // Hash the new password before saving it
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input('email', sql.VarChar, email)
+        .input('newPassword', sql.NVarChar, hashedPassword) // Use hashed password
+        .query('UPDATE Users SET password = @newPassword WHERE email = @email');
+      delete otpStore[email];
+      res.status(200).send('Password reset successful');
+    } else {
+      res.status(400).send('Invalid OTP');
+    }
+  } catch (err) {
+    console.error('Error resetting password:', err);
+    res.status(500).send('Error resetting password');
   }
 });
 
@@ -169,7 +236,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-
 // Create a new task
 app.post('/api/tasks', async (req, res) => {
   const { name, date, cluster, resourceType, tasks, assignedTo } = req.body; // Ensure assignedTo is destructured
@@ -204,6 +270,62 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
+app.get('/api/export-tasks', authorize(['Team Member', 'Cluster Lead', 'Manager']), async (req, res) => {
+  try {
+    const { email, role, cluster } = req.user; // Log the user's role and email
+    console.log('Exporting tasks for user:', email, 'with role:', role, 'in cluster:', cluster);
+
+    const pool = await poolPromise;
+
+    let query = `
+      SELECT 
+        t.id AS task_id, 
+        t.name AS task_name, 
+        t.date, 
+        t.cluster, 
+        t.resourceType, 
+        t.assignedTo,
+        ts.incCr, 
+        ts.product, 
+        ts.taskType, 
+        ts.taskDescription, 
+        ts.plannerHour, 
+        ts.actualHour
+      FROM Task t
+      JOIN Tasks ts ON t.id = ts.task_id
+    `;
+
+    if (role === 'Team Member') {
+      query += ` WHERE t.assignedTo = @userEmail`;
+    } else if (role === 'Cluster Lead') {
+      query += ` WHERE t.cluster = @userCluster`;
+    }
+
+    const result = await pool
+      .request()
+      .input('userEmail', sql.NVarChar, email)
+      .input('userCluster', sql.NVarChar, cluster)
+      .query(query);
+
+    const tasks = result.recordset;
+
+    // Format date fields
+    tasks.forEach(task => {
+      task.date = moment(task.date).format('YYYY-MM-DD');
+    });
+
+    const fields = ['task_id', 'task_name', 'date', 'cluster', 'resourceType', 'assignedTo', 'incCr', 'product', 'taskType', 'taskDescription', 'plannerHour', 'actualHour'];
+    const json2csvParser = new Parser({ fields });
+    const csv = json2csvParser.parse(tasks);
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment('tasks.csv');
+    res.send(csv);
+  } catch (err) {
+    console.error('Error exporting tasks as CSV:', err);
+    res.status(500).send('Error exporting tasks');
+  }
+});
 
 // Fetch all tasks
 app.get('/api/tasks', authorize(['Manager', 'Cluster Lead', 'Team Member']), async (req, res) => {
@@ -420,9 +542,6 @@ app.put('/api/users/:id/role', authorize(['Manager']), async (req, res) => {
   }
 });
 
-
-
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
-

@@ -91,7 +91,7 @@ function FormDataDetails() {
                             <th>Product</th>
                             <th>Task Type</th>
                             <th>Task Description</th>
-                            <th>Planner Hour</th>
+                            <th>Planned Hour</th>
                             <th>Actual Hour</th>
                             <th>Completed</th>
                         </tr>

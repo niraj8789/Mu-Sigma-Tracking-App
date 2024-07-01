@@ -59,6 +59,35 @@ function Dashboard() {
     setCurrentPage(1);
   };
 
+  const handleExport = async () => {
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      console.log('Sending request to export tasks with token:', token);
+      const response = await axios.get('http://localhost:5000/api/export-tasks', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        responseType: 'blob', // Important for downloading files
+      });
+
+      // Create a link to download the CSV file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'tasks.csv'); // or any other extension
+      document.body.appendChild(link);
+      link.click();
+    } catch (error) {
+      console.error('Error exporting tasks:', error);
+    }
+  };
+
   const indexOfLastTask = currentPage * tasksPerPage;
   const indexOfFirstTask = indexOfLastTask - tasksPerPage;
   const currentTasks = tasks.slice(indexOfFirstTask, indexOfLastTask);
@@ -109,7 +138,10 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
-      <h1 className="dashboard-heading">Task Dashboard</h1>
+      <div className="dashboard-header">
+        <h1 className="dashboard-heading">Task Dashboard</h1>
+        <button onClick={handleExport} className="export-button">Export Tasks as CSV</button>
+      </div>
       <div className="controls">
         <label>
           Tasks per page:

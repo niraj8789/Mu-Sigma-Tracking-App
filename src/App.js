@@ -9,7 +9,8 @@ import Registration from './components/Registration';
 import PerformanceVisuals from './components/PerformanceVisuals';
 import UserControl from './components/userControl'; 
 import UserDetails from './components/UserDetails'; 
-import ChangePassword from './components/ChangePassword'; 
+import ChangePassword from './components/ChangePassword';
+import ResetPassword from './components/ResetPassword'; // Import the ResetPassword component
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
@@ -44,6 +45,7 @@ function App() {
             <Route path="/user-control" element={<ProtectedRoute element={<WrapperComponent element={<UserControl />} />} />} />
             <Route path="/view-details" element={<ProtectedRoute element={<WrapperComponent element={<UserDetails />} />} />} />
             <Route path="/change-password" element={<ProtectedRoute element={<WrapperComponent element={<ChangePassword />} />} />} />
+            <Route path="/reset-password" element={<ResetPassword />} /> {/* Add the ResetPassword route */}
           </Routes>
         </div>
       </Router>

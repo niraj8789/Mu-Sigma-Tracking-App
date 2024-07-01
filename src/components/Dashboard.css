@@ -363,3 +363,176 @@ p {
     border-radius: 4px;
     border: 1px solid #ccc;
 }
+
+/* .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .export-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+   */
+  .export-button:hover {
+    background-color: #0056b3;
+  }
+  
+  
+/* Dashboard container styling */
+.dashboard {
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+    color: #333;
+}
+
+.dashboard-heading {
+    color: #2C3E50; /* Dark blue shade */
+    font-size: 32px;
+    text-align: center;
+    margin-bottom: 30px;
+    animation: fadeIn 1s ease-in-out;
+}
+
+/* Card container styling */
+/* .card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+/* Card styling */
+.card {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 20px;
+    transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s, color 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    animation: fadeInUp 0.5s ease-in-out;
+}
+
+.card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 100%);
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: -1;
+    opacity: 0;
+    transform: translateY(100%);
+}
+
+.card:hover::before {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.card:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.25);
+    background-color: #f0f8ff; /* Light blue background on hover */
+    color: #333;
+}
+
+/* General styling for headings and text */
+h1, h2, h3 {
+    color: #2C3E50; /* Dark blue shade */
+}
+
+p {
+    margin: 5px 0;
+}
+
+/* Progress bar styling */
+.progress-bar-container {
+    background-color: #eee;
+    border-radius: 10px;
+    width: 100%;
+    height: 20px;
+    margin: 20px 0;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+/* 
+.progress-bar {
+    background-color: #4CAF50; 
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease-in-out;
+    width: 0%; 
+}  */
+
+/* Button styling */
+.export-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    float: right; /* Align to the right */
+}
+
+.export-button:hover {
+    background-color: #0056b3;
+}
+
+/* Pagination styling */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.pagination button {
+    margin: 0 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.pagination button.active {
+    background-color: #0056b3;
+}
+
+.pagination button:hover:not(.active) {
+    background-color: #0056b3;
+}
+
+/* Controls styling */
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.controls label {
+    display: flex;
+    align-items: center;
+}
+
+.controls select {
+    margin-left: 10px;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
