@@ -1,4 +1,4 @@
-/* Dashboard container styling */
+
 .dashboard {
     padding: 20px;
     font-family: 'Arial', sans-serif;
@@ -6,21 +6,21 @@
 }
 
 .dashboard-heading {
-    color: #2C3E50; /* Dark blue shade */
+    color: #2C3E50;
     font-size: 32px;
     text-align: center;
     margin-bottom: 30px;
     animation: fadeIn 1s ease-in-out;
 }
 
-/* Card container styling */
+
 .card-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
 }
 
-/* Card styling */
+
 .card {
     background-color: #fff;
     border-radius: 12px;
@@ -56,20 +56,20 @@
 .card:hover {
     transform: translateY(-10px) scale(1.05);
     box-shadow: 0 12px 20px rgba(0,0,0,0.25);
-    background-color: #f0f8ff; /* Light blue background on hover */
+    background-color: #f0f8ff;
     color: #333;
 }
 
-/* General styling for headings and text */
+
 h1, h2, h3 {
-    color: #2C3E50; /* Dark blue shade */
+    color: #2C3E50;
 }
 
 p {
     margin: 5px 0;
 }
 
-/* Progress bar styling */
+
 .progress-bar-container {
     background-color: #eee;
     border-radius: 10px;
@@ -80,14 +80,14 @@ p {
 }
 
 .progress-bar {
-    background-color: #4CAF50; /* Green */
+    background-color: #4CAF50;
     height: 100%;
     border-radius: 10px;
     transition: width 0.5s ease-in-out;
-    width: 0%; /* Default width */
+    width: 0%;
 }
 
-/* Button styling */
+
 .button {
     padding: 10px 20px;
     background-color: #007bff;
@@ -102,7 +102,7 @@ p {
     background-color: #0056b3;
 }
 
-/* Popup styling */
+
 .popup {
     position: fixed;
     top: 50%;
@@ -145,7 +145,7 @@ p {
     z-index: 999;
 }
 
-/* Keyframes for animations */
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -157,9 +157,9 @@ p {
 }
 
 
-/* Existing CSS */
 
-/* Dashboard container styling */
+
+
 .dashboard {
     padding: 20px;
     font-family: 'Arial', sans-serif;
@@ -167,21 +167,21 @@ p {
 }
 
 .dashboard-heading {
-    color: #2C3E50; /* Dark blue shade */
+    color: #2C3E50;
     font-size: 32px;
     text-align: center;
     margin-bottom: 30px;
     animation: fadeIn 1s ease-in-out;
 }
 
-/* Card container styling */
+
 .card-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
 }
 
-/* Card styling */
+
 .card {
     background-color: #fff;
     border-radius: 12px;
@@ -217,20 +217,20 @@ p {
 .card:hover {
     transform: translateY(-10px) scale(1.05);
     box-shadow: 0 12px 20px rgba(0,0,0,0.25);
-    background-color: #f0f8ff; /* Light blue background on hover */
+    background-color: #f0f8ff;
     color: #333;
 }
 
-/* General styling for headings and text */
+
 h1, h2, h3 {
-    color: #2C3E50; /* Dark blue shade */
+    color: #2C3E50;
 }
 
 p {
     margin: 5px 0;
 }
 
-/* Progress bar styling */
+
 .progress-bar-container {
     background-color: #eee;
     border-radius: 10px;
@@ -241,14 +241,14 @@ p {
 }
 
 .progress-bar {
-    background-color: #4CAF50; /* Green */
+    background-color: #4CAF50;
     height: 100%;
     border-radius: 10px;
     transition: width 0.5s ease-in-out;
-    width: 0%; /* Default width */
+    width: 0%;
 }
 
-/* Button styling */
+
 .button {
     padding: 10px 20px;
     background-color: #007bff;
@@ -263,7 +263,7 @@ p {
     background-color: #0056b3;
 }
 
-/* Popup styling */
+
 .popup {
     position: fixed;
     top: 50%;
@@ -306,7 +306,7 @@ p {
     z-index: 999;
 }
 
-/* Keyframes for animations */
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -317,9 +317,9 @@ p {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Added CSS for Pagination */
 
-/* Pagination styling */
+
+
 .pagination {
     display: flex;
     justify-content: center;
@@ -345,7 +345,7 @@ p {
     background-color: #0056b3;
 }
 
-/* Controls styling */
+
 .controls {
     display: flex;
     justify-content: flex-end;
@@ -364,29 +364,13 @@ p {
     border: 1px solid #ccc;
 }
 
-/* .dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .export-button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-   */
+
   .export-button:hover {
     background-color: #0056b3;
   }
   
   
-/* Dashboard container styling */
+
 .dashboard {
     padding: 20px;
     font-family: 'Arial', sans-serif;
@@ -394,21 +378,15 @@ p {
 }
 
 .dashboard-heading {
-    color: #2C3E50; /* Dark blue shade */
+    color: #2C3E50;
     font-size: 32px;
     text-align: center;
     margin-bottom: 30px;
     animation: fadeIn 1s ease-in-out;
 }
 
-/* Card container styling */
-/* .card-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-}
 
-/* Card styling */
+
 .card {
     background-color: #fff;
     border-radius: 12px;
@@ -444,20 +422,20 @@ p {
 .card:hover {
     transform: translateY(-10px) scale(1.05);
     box-shadow: 0 12px 20px rgba(0,0,0,0.25);
-    background-color: #f0f8ff; /* Light blue background on hover */
+    background-color: #f0f8ff;
     color: #333;
 }
 
-/* General styling for headings and text */
+
 h1, h2, h3 {
-    color: #2C3E50; /* Dark blue shade */
+    color: #2C3E50;
 }
 
 p {
     margin: 5px 0;
 }
 
-/* Progress bar styling */
+
 .progress-bar-container {
     background-color: #eee;
     border-radius: 10px;
@@ -466,16 +444,9 @@ p {
     margin: 20px 0;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
 }
-/* 
-.progress-bar {
-    background-color: #4CAF50; 
-    height: 100%;
-    border-radius: 10px;
-    transition: width 0.5s ease-in-out;
-    width: 0%; 
-}  */
 
-/* Button styling */
+
+
 .export-button {
     padding: 10px 20px;
     background-color: #007bff;
@@ -484,14 +455,14 @@ p {
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s;
-    float: right; /* Align to the right */
+    float: right;
 }
 
 .export-button:hover {
     background-color: #0056b3;
 }
 
-/* Pagination styling */
+
 .pagination {
     display: flex;
     justify-content: center;
@@ -517,7 +488,7 @@ p {
     background-color: #0056b3;
 }
 
-/* Controls styling */
+
 .controls {
     display: flex;
     justify-content: space-between;
@@ -536,3 +507,77 @@ p {
     border-radius: 4px;
     border: 1px solid #ccc;
 }
+
+
+.filters-container {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    height: calc(100% - 60px);
+    width: 250px;
+    background-color: #f8f9fa;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+  }
+  
+  .filters-container.show {
+    transform: translateX(0);
+  }
+  
+ 
+  .filters {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+ 
+  .filters label {
+    display: flex;
+    flex-direction: column;
+    font-weight: bold;
+    color: #333;
+    font-size: 0.9rem;
+  }
+  
+  .filters input {
+    padding: 5px;
+    margin-top: 2px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .clear-filters-button {
+    padding: 8px;
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .clear-filters-button:hover {
+    background-color: #cc0000;
+  }
+  
+ 
+  .filter-icon {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+  }
+  
+ 
+  .dashboard-content {
+    transition: margin-left 0.3s ease-in-out;
+  }
+  
+  .dashboard-content.shifted {
+    margin-left: 250px;
+  }
+  

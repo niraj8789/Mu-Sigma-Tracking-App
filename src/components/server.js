@@ -477,7 +477,7 @@ app.get('/api/stats/monthly', async (req, res) => {
 });
 
 // Cron job to check for missing tasks and send alert emails
-cron.schedule('40 16 * * *', async () => {  // Runs every day at 4:34 PM IST
+cron.schedule('0 16 * * 1-5', async () => {  // Runs every weekday at 4:00 PM IST
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
@@ -485,7 +485,7 @@ cron.schedule('40 16 * * *', async () => {  // Runs every day at 4:34 PM IST
              (SELECT email FROM Users WHERE role = 'Manager') AS managerEmail,
              (SELECT email FROM Users WHERE role = 'Cluster Lead' AND cluster = u.cluster) AS clusterLeadEmail
       FROM Users u
-      LEFT JOIN Task t ON u.id = t.id AND t.date = CAST(GETDATE() AS DATE)
+      LEFT JOIN Task t ON u.email = t.assignedTo AND CAST(t.date AS DATE) = CAST(GETDATE() AS DATE)
       WHERE t.id IS NULL
     `);
     const missingTasksUsers = result.recordset;
@@ -512,6 +512,7 @@ cron.schedule('40 16 * * *', async () => {  // Runs every day at 4:34 PM IST
     console.error('Error checking for missing tasks:', err);
   }
 });
+
 
 app.get('/api/users', authorize(['Manager']), async (req, res) => {
   try {
