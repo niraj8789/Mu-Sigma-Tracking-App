@@ -12,10 +12,10 @@ app.use(express.json());
 const crypto = require('crypto');
 const { Parser } = require('json2csv');
 const moment = require('moment');
+const jwt = require('jsonwebtoken');
 
 const tokens = {};
 const otpStore = {};
-const jwt = require('jsonwebtoken');
 
 // Email service configuration
 const transporter = nodemailer.createTransport({
@@ -434,20 +434,50 @@ app.put('/api/tasks/:id', async (req, res) => {
   }
 });
 
-// Fetch weekly statistics
+// Fetch weekly statistics with filters
+// Enhanced filtering and sorting for weekly stats
 app.get('/api/stats/weekly', async (req, res) => {
+  const { startDate, endDate, task, sortBy } = req.query;
   try {
     const pool = await poolPromise;
-    const result = await pool.request().query(`
+
+    let query = `
       SELECT
         t.name,
         SUM(ts.plannerHour) AS totalPlannerHour,
         SUM(ts.actualHour) AS totalActualHour
       FROM Task t
       JOIN Tasks ts ON t.id = ts.task_id
-      WHERE t.date >= DATEADD(day, -7, GETDATE())
-      GROUP BY t.name
-    `);
+      WHERE 1 = 1
+    `;
+
+    if (startDate && endDate) {
+      query += ` AND t.date BETWEEN @startDate AND @endDate`;
+    }
+
+    if (task && task !== 'All') {
+      const tasks = task.split(',').map(t => `'${t}'`).join(',');
+      query += ` AND ts.taskType IN (${tasks})`;
+    }
+
+    query += ` GROUP BY t.name`;
+
+    if (sortBy) {
+      if (sortBy === 'planned') {
+        query += ` ORDER BY SUM(ts.plannerHour) DESC`;
+      } else if (sortBy === 'actual') {
+        query += ` ORDER BY SUM(ts.actualHour) DESC`;
+      } else if (sortBy === 'name') {
+        query += ` ORDER BY t.name`;
+      }
+    }
+
+    const result = await pool
+      .request()
+      .input('startDate', sql.Date, startDate)
+      .input('endDate', sql.Date, endDate)
+      .query(query);
+
     res.json(result.recordset);
   } catch (err) {
     console.error('Error fetching weekly statistics:', err);
@@ -455,20 +485,47 @@ app.get('/api/stats/weekly', async (req, res) => {
   }
 });
 
-// Fetch monthly statistics
+
+// Fetch monthly statistics with filters
 app.get('/api/stats/monthly', async (req, res) => {
+  const { startDate, endDate, role, task } = req.query;
   try {
     const pool = await poolPromise;
-    const result = await pool.request().query(`
+
+    let query = `
       SELECT
         t.name,
         SUM(ts.plannerHour) AS totalPlannerHour,
-        SUM(ts.actualHour) AS totalActualHour
+        SUM(ts.actualHour) AS totalActualHour,
+        u.role
       FROM Task t
       JOIN Tasks ts ON t.id = ts.task_id
-      WHERE MONTH(t.date) = MONTH(GETDATE()) AND YEAR(t.date) = YEAR(GETDATE())
-      GROUP BY t.name
-    `);
+      JOIN Users u ON u.email = t.assignedTo
+      WHERE 1 = 1
+    `;
+
+    if (startDate && endDate) {
+      query += ` AND t.date BETWEEN @startDate AND @endDate`;
+    }
+
+    if (role && role !== 'All') {
+      query += ` AND u.role = @role`;
+    }
+
+    if (task && task !== 'All') {
+      query += ` AND ts.taskType = @task`;
+    }
+
+    query += ` GROUP BY t.name, u.role`;
+
+    const result = await pool
+      .request()
+      .input('startDate', sql.Date, startDate)
+      .input('endDate', sql.Date, endDate)
+      .input('role', sql.NVarChar, role)
+      .input('task', sql.NVarChar, task)
+      .query(query);
+
     res.json(result.recordset);
   } catch (err) {
     console.error('Error fetching monthly statistics:', err);
@@ -476,6 +533,24 @@ app.get('/api/stats/monthly', async (req, res) => {
   }
 });
 
+app.get('/api/stats/clusters', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request().query(`
+      SELECT
+        t.cluster,
+        SUM(ts.plannerHour) AS totalPlannerHour
+      FROM Task t
+      JOIN Tasks ts ON t.id = ts.task_id
+      GROUP BY t.cluster
+      ORDER BY totalPlannerHour DESC
+    `);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error fetching cluster utilization:', err);
+    res.status(500).send('Error fetching cluster utilization');
+  }
+});
 // Cron job to check for missing tasks and send alert emails
 cron.schedule('0 16 * * 1-5', async () => {  // Runs every weekday at 4:00 PM IST
   try {
@@ -513,7 +588,6 @@ cron.schedule('0 16 * * 1-5', async () => {  // Runs every weekday at 4:00 PM IS
   }
 });
 
-
 app.get('/api/users', authorize(['Manager']), async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -542,6 +616,36 @@ app.put('/api/users/:id/role', authorize(['Manager']), async (req, res) => {
     res.status(500).send('Error updating role');
   }
 });
+
+// Fetch tasks by cluster
+app.get('/api/stats/tasks', async (req, res) => {
+  const { cluster } = req.query;
+  try {
+    const pool = await poolPromise;
+
+    const query = `
+      SELECT
+        ts.taskType,
+        SUM(ts.plannerHour) AS totalPlannerHour
+      FROM Task t
+      JOIN Tasks ts ON t.id = ts.task_id
+      WHERE t.cluster = @cluster
+      GROUP BY ts.taskType
+      ORDER BY totalPlannerHour DESC
+    `;
+
+    const result = await pool
+      .request()
+      .input('cluster', sql.NVarChar, cluster)
+      .query(query);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error fetching tasks by cluster:', err);
+    res.status(500).send('Error fetching tasks by cluster');
+  }
+});
+
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

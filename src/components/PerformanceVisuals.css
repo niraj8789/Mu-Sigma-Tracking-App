@@ -1,24 +1,361 @@
-/* Performance.css */
-.performance {
+.performance-visuals {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
   padding: 20px;
+  background: #f7f9fc;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 1s ease-in-out;
 }
 
-h2 {
-  margin-top: 20px;
+.performance-visuals h2 {
+  margin-bottom: 20px;
+  font-size: 28px;
+  color: #333;
+  font-weight: 700;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+.performance-visuals .view-toggle,
+.performance-visuals .time-range-toggle,
+.performance-visuals .chart-type-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  gap: 20px;
 }
 
-th, td {
-  padding: 10px;
-  border: 1px solid #ccc;
+.performance-visuals .toggle-button {
+  background: #fff;
+  border: 2px solid #ddd;
+  padding: 8px 20px;
+  cursor: pointer;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.performance-visuals .toggle-button:hover {
+  background: #f0f0f0;
+  transform: scale(1.05);
+}
+
+.performance-visuals .toggle-button.active {
+  background: linear-gradient(135deg, #42a5f5, #478ed1);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.performance-visuals .filter-section,
+.performance-visuals .deep-filter-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 25px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.performance-visuals .date-picker,
+.performance-visuals .task-filter,
+.performance-visuals .cluster-filter,
+.performance-visuals .sort-by {
+  flex: 1 1 180px;
   text-align: left;
 }
 
-th {
-  background-color: #f4f4f4;
+.performance-visuals select[multiple] {
+  height: auto;
+}
+
+.performance-visuals .sort-by {
+  display: flex;
+  flex-direction: column;
+}
+
+.performance-visuals label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+}
+
+.performance-visuals .date-picker .react-datepicker-wrapper {
+  width: 100%;
+}
+
+.performance-visuals .filter-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.performance-visuals .filter-button,
+.performance-visuals .clear-filters-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.performance-visuals .filter-button {
+  background-color: #42a5f5;
+  color: white;
+}
+
+.performance-visuals .filter-button:hover {
+  background-color: #478ed1;
+  transform: scale(1.05);
+}
+
+.performance-visuals .clear-filters-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.performance-visuals .clear-filters-button:hover {
+  background-color: #d32f2f;
+  transform: scale(1.05);
+}
+
+.performance-visuals .metrics {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 1s ease-in-out;
+}
+
+.performance-visuals .metric-item {
+  text-align: center;
+  flex: 1;
+  margin: 0 10px;
+  padding: 20px;
+  background: #e0f7fa;
+  border-radius: 10px;
+  transition: transform 0.3s ease;
+}
+
+.performance-visuals .metric-item:hover {
+  transform: scale(1.05);
+  background: #b2ebf2;
+}
+
+.performance-visuals .metric-item h3 {
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #00796b;
+}
+
+.performance-visuals .metric-item p {
+  font-size: 16px;
+  color: #004d40;
+}
+
+.performance-visuals .chart-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 1s ease-in-out;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.performance-visuals .chart-container canvas {
+  max-width: 100%;
+  max-height: 500px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .performance-visuals .chart-container {
+    padding: 10px;
+  }
+  
+  .performance-visuals .chart-container canvas {
+    max-height: 300px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.performance-visuals select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.performance-visuals select:focus {
+  border-color: #42a5f5;
+  box-shadow: 0 0 5px rgba(66, 165, 245, 0.5);
+}
+
+.performance-visuals .react-datepicker__input-container input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.performance-visuals .react-datepicker__input-container input:focus {
+  border-color: #42a5f5;
+  box-shadow: 0 0 5px rgba(66, 165, 245, 0.5);
+}
+
+.error {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.export-button {
+  display: inline-block;
+  margin: 0 10px 20px 0;
+  padding: 8px 12px;
+  background-color: #008CBA;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.export-button:hover {
+  background-color: #007B9A;
+  transform: scale(1.05);
+}
+
+.top-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.notification-section {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.notification-section input {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.notification-section button {
+  padding: 10px 16px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  font-size: 14px;
+}
+
+.notification-section button:hover {
+  background-color: #d32f2f;
+  transform: scale(1.05);
+}
+
+.chart-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.chart-options .chart-type-toggle,
+.chart-options .toggle-cumulative,
+.chart-options .toggle-detailed-metrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-options .chart-toggle-button {
+  background: #fff;
+  border: 2px solid #ddd;
+  padding: 8px 20px;
+  cursor: pointer;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.chart-options .chart-toggle-button:hover {
+  background: #f0f0f0;
+  transform: scale(1.05);
+}
+
+.chart-options .chart-toggle-button.active {
+  background: linear-gradient(135deg, #42a5f5, #478ed1);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.chart-options label {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.chart-options input[type="checkbox"] {
+  margin-right: 10px;
 }
