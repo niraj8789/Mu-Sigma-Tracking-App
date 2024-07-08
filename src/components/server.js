@@ -13,14 +13,38 @@ const crypto = require('crypto');
 const { Parser } = require('json2csv');
 const moment = require('moment');
 const jwt = require('jsonwebtoken');
+const WebSocket=require('ws');
+const http = require('http');
 
 const tokens = {};
 const otpStore = {};
 const notifications = []; // In-memory storage for notifications
 
+app.use(cors());
+app.use(express.json());
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+const clients = new Set(); // Set to store connected clients
+
 const addNotification = (message) => {
-  notifications.push({ message, read: false, timestamp: new Date() }); // Adding a timestamp
+  const notification = { message, read: false, timestamp: new Date() };
+  notifications.push(notification);
+
+  // Broadcast notification to all connected clients
+  clients.forEach((ws) => {
+    ws.send(JSON.stringify(notification));
+  });
 };
+
+wss.on('connection', (ws) => {
+  clients.add(ws);
+
+  ws.on('close', () => {
+    clients.delete(ws);
+  });
+});
+
 
 
 // Example to mark a notification as read
@@ -723,6 +747,6 @@ app.get('/api/stats/tasks', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

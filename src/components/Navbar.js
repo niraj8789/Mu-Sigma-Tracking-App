@@ -15,6 +15,19 @@ function Navbar() {
 
     useEffect(() => {
         fetchNotifications();
+
+        // WebSocket setup
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            const ws = new WebSocket(`ws://localhost:5000?token=${token}`);
+            ws.onmessage = (event) => {
+                const notification = JSON.parse(event.data);
+                setNotifications((prevNotifications) => [notification, ...prevNotifications]);
+            };
+            return () => {
+                ws.close();
+            };
+        }
     }, []);
 
     const fetchNotifications = async () => {
@@ -44,7 +57,9 @@ function Navbar() {
     const markNotificationAsRead = async (index) => {
         try {
             await axios.put(`http://localhost:5000/api/notifications/${index}/read`);
-            const updatedNotifications = notifications.filter((_, i) => i !== index);
+            const updatedNotifications = notifications.map((notification, i) => 
+                i === index ? { ...notification, read: true } : notification
+            );
             setNotifications(updatedNotifications);
         } catch (error) {
             console.error('Error marking notification as read:', error);
@@ -71,7 +86,7 @@ function Navbar() {
         setShowNotifications(!showNotifications);
     };
 
-    const unreadCount = notifications.length;
+    const unreadCount = notifications.filter(notification => !notification.read).length;
 
     return (
         <nav className="navbar">
