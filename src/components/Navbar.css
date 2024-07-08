@@ -6,6 +6,7 @@
     padding: 10px 20px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
+    font-family: 'Arial', sans-serif;
 }
 
 .navbar-container {
@@ -20,8 +21,13 @@
 }
 
 .logo {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
+    transition: transform 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.1);
 }
 
 .nav-links {
@@ -34,18 +40,106 @@
     color: #fff;
     padding: 10px 15px;
     border-radius: 5px;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.2s ease;
     font-weight: bold;
 }
 
 .nav-link:hover {
     background-color: #d61313;
+    transform: scale(1.05);
 }
 
-.logout-container {
-    position: relative;
+.user-actions {
     display: flex;
     align-items: center;
+    position: relative;
+}
+
+.notification-icon {
+    position: relative;
+    cursor: pointer;
+    margin-right: 20px;
+    font-size: 24px;
+    color: #ff8c00;
+    transition: transform 0.3s ease;
+}
+
+.notification-icon:hover {
+    transform: scale(1.1);
+}
+
+.notification-count {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    padding: 5px;
+    font-size: 12px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.notification-dropdown {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background-color: #fff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    z-index: 1000;
+    border-radius: 5px;
+    width: 300px;
+    max-height: 300px;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    border: 1px solid #ddd;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.notification-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.notification-item {
+    padding: 10px;
+    font-size: 0.85rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    border-bottom: 1px solid #eee;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification-item:hover {
+    background-color: #f9f9f9;
+    transform: scale(1.05);
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item .message {
+    color: #666;
+    flex: 1;
+    font-weight: bold;
+}
+
+.notification-item .timestamp {
+    margin-left: 10px;
+    color: #888;
+    font-size: 0.7rem;
+    background-color: #ffeb3b;
+    padding: 3px 6px;
+    border-radius: 3px;
 }
 
 .user-icon {
@@ -61,26 +155,31 @@
     width: 40px;
     height: 40px;
     position: relative;
+    transition: transform 0.3s ease;
+}
+
+.user-icon:hover {
+    transform: scale(1.1);
 }
 
 .dropdown-menu {
     position: absolute;
-    top: 60px; /* Adjusted to avoid overlapping */
+    top: 50px;
     right: 0;
     background-color: #fff;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Increased shadow for better depth */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 5px; /* Reduced gap for more compact look */
+    gap: 5px;
     z-index: 1000;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
     transition: all 0.3s ease;
     border-radius: 5px;
-    font-size: 0.85rem; /* Reduced font size */
-    min-width: 150px; /* Set minimum width for better alignment */
+    font-size: 0.85rem;
+    min-width: 150px;
 }
 
 .user-icon:hover .dropdown-menu,
@@ -94,19 +193,36 @@
 .dropdown-menu a {
     background-color: #6d0707;
     color: #fff;
-    padding: 8px 12px; /* Reduced padding for better aesthetics */
+    padding: 8px 12px;
     text-decoration: none;
-    /* margin-top: 2px; */
     text-align: center;
     border: none;
     cursor: pointer;
-    border-radius: 3px; /* Added border radius for a smoother look */
-    font-size: 0.85rem; /* Adjusted font size */
-    transition: background-color 0.3s ease, transform 0.2s ease; /* Added transition for hover effects */
+    border-radius: 3px;
+    font-size: 0.85rem;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .dropdown-menu button:hover,
 .dropdown-menu a:hover {
     background-color: #d61313;
-    transform: scale(1.05); /* Added scaling effect on hover */
+    transform: scale(1.05);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(10px);
+    }
+    to {
+        transform: translateY(0);
+    }
 }

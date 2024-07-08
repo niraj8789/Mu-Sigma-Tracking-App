@@ -14,7 +14,7 @@ const config = {
       options: {
         domain: 'MU-SIGMA', // Specify your domain
         userName: 'Neeraj.Kumar', // Specify your username
-        password:'Patrick@8789'
+        password:'Bateman@8789'
       },
     },
   };

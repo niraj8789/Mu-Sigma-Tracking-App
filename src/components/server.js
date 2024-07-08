@@ -16,6 +16,27 @@ const jwt = require('jsonwebtoken');
 
 const tokens = {};
 const otpStore = {};
+const notifications = []; // In-memory storage for notifications
+
+const addNotification = (message) => {
+  notifications.push({ message, read: false, timestamp: new Date() }); // Adding a timestamp
+};
+
+
+// Example to mark a notification as read
+const markNotificationAsRead = (index) => {
+  if (notifications[index]) {
+      notifications[index].read = true;
+  }
+};
+
+// Endpoint to mark notification as read
+app.put('/api/notifications/:index/read', (req, res) => {
+  const { index } = req.params;
+  markNotificationAsRead(index);
+  res.status(200).send('Notification marked as read');
+});
+
 
 // Email service configuration
 const transporter = nodemailer.createTransport({
@@ -51,6 +72,11 @@ app.get('/', (req, res) => {
   res.send('Welcome to the API!');
 });
 
+// Endpoint to get notifications
+app.get('/api/notifications', (req, res) => {
+  res.json(notifications);
+});
+
 // Send OTP endpoint
 app.post('/api/send-otp', async (req, res) => {
   const { email } = req.body;
@@ -81,6 +107,9 @@ app.post('/api/send-otp', async (req, res) => {
       }
       res.status(200).send('OTP sent successfully');
     });
+    
+    // Add notification
+    addNotification(`OTP sent to: ${email}`);
   } catch (err) {
     console.error('Error sending OTP:', err);
     res.status(500).send('Error sending OTP');
@@ -104,6 +133,9 @@ app.post('/api/request-password-reset', async (req, res) => {
       sendOtpEmail(email, otp);
 
       res.status(200).send('OTP sent to email');
+
+      // Add notification
+      addNotification(`Password reset requested for: ${email}`);
     } else {
       res.status(404).send('Email not found');
     }
@@ -126,6 +158,9 @@ app.post('/api/reset-password', async (req, res) => {
         .query('UPDATE Users SET password = @newPassword WHERE email = @email');
       delete otpStore[email];
       res.status(200).send('Password reset successful');
+
+      // Add notification
+      addNotification(`Password reset for: ${user}`);
     } else {
       res.status(400).send('Invalid OTP');
     }
@@ -166,6 +201,9 @@ app.post('/api/change-password', async (req, res) => {
     delete otpStore[email]; // Clear OTP after password change
 
     res.status(200).send('Password changed successfully');
+
+    // Add notification
+    addNotification(`Password changed for: ${user}`);
   } catch (err) {
     console.error('Error changing password:', err);
     res.status(500).send('Error changing password');
@@ -197,7 +235,11 @@ app.post('/api/register', async (req, res) => {
       .input('clusterLead', sql.NVarChar, clusterLead)
       .input('role', sql.NVarChar, role)
       .query('INSERT INTO Users (name, email, password, cluster, clusterLead, role) VALUES (@name, @email, @password, @cluster, @clusterLead, @role)');
-    console.log(`User registered with role: ${role}`); // Debug log
+    
+    // Add notification
+    addNotification(`User registered: ${name} (${role})`);
+
+    console.log(`User registered with role: ${role}`);
     res.status(201).send('User registered');
   } catch (err) {
     console.error('Error registering user:', err);
@@ -222,7 +264,11 @@ app.post('/api/login', async (req, res) => {
           'your_jwt_secret_key',
           { expiresIn: '1h' }
         );
-        console.log(`User logged in with role: ${user.role}`); // Debug log
+
+        // Add notification
+        // addNotification(`User logged in: ${user.name}`);
+
+        console.log(`User logged in with role: ${user.role}`);
         res.json({ token, user: { id: user.id, name: user.name, email: user.email, cluster: user.cluster, role: user.role } });
       } else {
         res.status(401).json({ error: 'Invalid email or password' });
@@ -238,7 +284,7 @@ app.post('/api/login', async (req, res) => {
 
 // Create a new task
 app.post('/api/tasks', async (req, res) => {
-  const { name, date, cluster, resourceType, tasks, assignedTo } = req.body; // Ensure assignedTo is destructured
+  const { name, date, cluster, resourceType, tasks, assignedTo } = req.body;
   try {
     const pool = await poolPromise;
     const result = await pool
@@ -263,6 +309,9 @@ app.post('/api/tasks', async (req, res) => {
         .query(`INSERT INTO Tasks (task_id, incCr, product, taskType, taskDescription, plannerHour) VALUES (@task_id, @incCr, @product, @taskType, @taskDescription, @plannerHour)`);
     }
     
+    // Add notification
+    addNotification(`Task created: ${name}`);
+
     res.status(201).send('Task created successfully');
   } catch (err) {
     console.error('Error creating task:', err);
@@ -321,6 +370,9 @@ app.get('/api/export-tasks', authorize(['Team Member', 'Cluster Lead', 'Manager'
     res.header('Content-Type', 'text/csv');
     res.attachment('tasks.csv');
     res.send(csv);
+    
+    // Add notification
+    addNotification(`Tasks exported as CSV by ${email}`);
   } catch (err) {
     console.error('Error exporting tasks as CSV:', err);
     res.status(500).send('Error exporting tasks');
@@ -366,6 +418,9 @@ app.get('/api/tasks', authorize(['Manager', 'Cluster Lead', 'Team Member']), asy
     }));
 
     res.json(tasks);
+    
+    // Add notification
+    // addNotification(`Tasks fetched by ${email}`);
   } catch (err) {
     console.error('Error fetching tasks:', err);
     res.status(500).send('Error fetching tasks');
@@ -389,6 +444,9 @@ app.get('/api/tasks/:id', async (req, res) => {
       const task = taskResult.recordset[0];
       task.entries = taskEntriesResult.recordset;
       res.json(task);
+      
+      // Add notification
+      // addNotification(`Task details fetched for task ID: ${id}`);
     } else {
       res.status(404).send('Task not found');
     }
@@ -427,6 +485,10 @@ app.put('/api/tasks/:id', async (req, res) => {
     if (result.rowsAffected[0] === 0) {
       return res.status(404).send('Task not found');
     }
+    
+    // Add notification
+    addNotification(`Actual hours updated for task ID: ${id}`);
+
     return res.status(200).send('Task updated successfully');
   } catch (err) {
     console.error('Error updating task:', err);
@@ -435,7 +497,6 @@ app.put('/api/tasks/:id', async (req, res) => {
 });
 
 // Fetch weekly statistics with filters
-// Enhanced filtering and sorting for weekly stats
 app.get('/api/stats/weekly', async (req, res) => {
   const { startDate, endDate, task, sortBy } = req.query;
   try {
@@ -479,6 +540,9 @@ app.get('/api/stats/weekly', async (req, res) => {
       .query(query);
 
     res.json(result.recordset);
+    
+    // Add notification
+    // addNotification(`Weekly stats fetched for ${startDate} to ${endDate}`);
   } catch (err) {
     console.error('Error fetching weekly statistics:', err);
     res.status(500).send('Error fetching weekly statistics');
@@ -527,6 +591,9 @@ app.get('/api/stats/monthly', async (req, res) => {
       .query(query);
 
     res.json(result.recordset);
+    
+    // Add notification
+    // addNotification(`Monthly stats fetched for ${startDate} to ${endDate}`);
   } catch (err) {
     console.error('Error fetching monthly statistics:', err);
     res.status(500).send('Error fetching monthly statistics');
@@ -546,22 +613,25 @@ app.get('/api/stats/clusters', async (req, res) => {
       ORDER BY totalPlannerHour DESC
     `);
     res.json(result.recordset);
+    
+    // Add notification
+    // addNotification(`Cluster utilization stats fetched`);
   } catch (err) {
     console.error('Error fetching cluster utilization:', err);
     res.status(500).send('Error fetching cluster utilization');
   }
 });
 // Cron job to check for missing tasks and send alert emails
-cron.schedule('0 16 * * 1-5', async () => {  // Runs every weekday at 4:00 PM IST
+cron.schedule('0 14 * * 1-5', async () => {  // Runs every weekday at 7:53 PM
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
       SELECT u.email, u.name, u.cluster,
-             (SELECT email FROM Users WHERE role = 'Manager') AS managerEmail,
-             (SELECT email FROM Users WHERE role = 'Cluster Lead' AND cluster = u.cluster) AS clusterLeadEmail
+             (SELECT TOP 1 email FROM Users WHERE role = 'Manager') AS managerEmail,
+             (SELECT TOP 1 email FROM Users WHERE role = 'Cluster Lead' AND cluster = u.cluster) AS clusterLeadEmail
       FROM Users u
       LEFT JOIN Task t ON u.email = t.assignedTo AND CAST(t.date AS DATE) = CAST(GETDATE() AS DATE)
-      WHERE t.id IS NULL
+      WHERE t.id IS NULL AND u.role = 'Team Member'
     `);
     const missingTasksUsers = result.recordset;
 
@@ -570,7 +640,7 @@ cron.schedule('0 16 * * 1-5', async () => {  // Runs every weekday at 4:00 PM IS
       const mailOptions = {
         from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
         to: user.email,
-        cc: [user.managerEmail, user.clusterLeadEmail, 'itsniraj4@gmail.com'].filter(Boolean).join(', '),
+        cc: [user.managerEmail, user.clusterLeadEmail].filter(Boolean).join(', '),
         subject: 'Daily Task Reminder',
         text: `Hi ${user.name},\n\nYou have not submitted your Daily Task records. Please don't forget to fill it before 6 PM.\n\nThanks`
       };
@@ -587,6 +657,7 @@ cron.schedule('0 16 * * 1-5', async () => {  // Runs every weekday at 4:00 PM IS
     console.error('Error checking for missing tasks:', err);
   }
 });
+
 
 app.get('/api/users', authorize(['Manager']), async (req, res) => {
   try {
@@ -611,6 +682,9 @@ app.put('/api/users/:id/role', authorize(['Manager']), async (req, res) => {
       .input('role', sql.NVarChar, role)
       .query('UPDATE Users SET role = @role WHERE id = @id');
     res.send('User role updated successfully');
+
+    // Add notification
+    addNotification(`User role updated for user ID: ${id}`);
   } catch (err) {
     console.error('Error updating role:', err);
     res.status(500).send('Error updating role');
@@ -640,12 +714,14 @@ app.get('/api/stats/tasks', async (req, res) => {
       .query(query);
 
     res.json(result.recordset);
+    
+    // Add notification
+    // addNotification(`Tasks fetched by cluster: ${cluster}`);
   } catch (err) {
     console.error('Error fetching tasks by cluster:', err);
     res.status(500).send('Error fetching tasks by cluster');
   }
 });
-
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
