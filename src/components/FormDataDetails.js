@@ -4,7 +4,6 @@ import axios from 'axios';
 import './FormDataDetails.css';
 import moment from 'moment';
 
-
 function FormDataDetails() {
     const { id } = useParams();
     const [task, setTask] = useState(null);
@@ -34,9 +33,11 @@ function FormDataDetails() {
                 [index]: checked,
             }));
         } else {
+            // Ensure the value is non-negative and convert it to a number
+            const numericValue = Math.max(0, parseFloat(value));
             setActualHours((prev) => ({
                 ...prev,
-                [index]: value,
+                [index]: numericValue,
             }));
         }
     };
@@ -111,6 +112,8 @@ function FormDataDetails() {
                                         value={actualHours[index] || entry.actualHour || ''}
                                         onChange={(event) => handleInputChange(index, event)}
                                         className="input-actual-hour"
+                                        min="0"
+                                        step="0.1"  // Allowing decimal values
                                         disabled={!isToday(task.date)}
                                     />
                                 </td>
