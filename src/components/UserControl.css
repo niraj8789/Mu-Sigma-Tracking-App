@@ -1,48 +1,106 @@
 /* src/components/UserControl.css */
 .user-control {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 20px 30px;
+  background: linear-gradient(135deg, #ece9e6, #ffffff);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.user-control-heading {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.8em;
+  color: #2c3e50;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: color 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.user-control-heading:hover {
+  color: #34495e;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.user-table th,
+.user-table td {
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  text-align: left;
+  transition: all 0.3s ease;
+}
+
+.user-table th {
+  background: linear-gradient(135deg, #2980b9, #3498db);
+  color: white;
+  font-size: 1em;
+  text-transform: uppercase;
+}
+
+.user-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.user-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+.user-table td {
+  color: #555;
+  font-size: 0.9em;
+}
+
+.user-table select {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+}
+
+.user-table select:hover {
+  border-color: #2980b9;
+  background-color: #ecf0f1;
+}
+
+.error {
+  color: #e74c3c;
+  font-size: 1em;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Add some animations */
+@keyframes fadeIn {
+  from {
+      opacity: 0;
+      transform: translateY(-10px);
   }
-  
-  .user-control-heading {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 2em;
-    color: #333;
+  to {
+      opacity: 1;
+      transform: translateY(0);
   }
-  
-  .user-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .user-table th,
-  .user-table td {
-    padding: 12px;
-    border: 1px solid #ddd;
-    text-align: left;
-  }
-  
-  .user-table th {
-    background-color: #4caf50;
-    color: white;
-  }
-  
-  .user-table tr:nth-child(even) {
-    background-color: #f2f2f2;
-  }
-  
-  .user-table tr:hover {
-    background-color: #ddd;
-  }
-  
-  .user-table select {
-    padding: 5px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-  }
-  
+}
+
+.user-control {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.user-table th,
+.user-table td {
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+/* Navbar adjustments */
+.navbar {
+  padding: 10px 20px; /* Adjusted padding */
+}

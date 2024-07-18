@@ -18,20 +18,20 @@ const http = require('http');
 
 const tokens = {};
 const otpStore = {};
-const notifications = []; // In-memory storage for notifications
+const notifications = []; 
 
 app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
-const clients = new Set(); // Set to store connected clients
+const clients = new Set(); 
 
 const addNotification = (message) => {
   const notification = { message, read: false, timestamp: new Date() };
   notifications.push(notification);
 
-  // Broadcast notification to all connected clients
+  
   clients.forEach((ws) => {
     ws.send(JSON.stringify(notification));
   });
@@ -46,15 +46,12 @@ wss.on('connection', (ws) => {
 });
 
 
-
-// Example to mark a notification as read
 const markNotificationAsRead = (index) => {
   if (notifications[index]) {
       notifications[index].read = true;
   }
 };
 
-// Endpoint to mark notification as read
 app.put('/api/notifications/:index/read', (req, res) => {
   const { index } = req.params;
   markNotificationAsRead(index);
@@ -62,7 +59,6 @@ app.put('/api/notifications/:index/read', (req, res) => {
 });
 
 
-// Email service configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -89,19 +85,17 @@ const sendOtpEmail = (email, otp) => {
 };
 
 const generateOtp = () => {
-  return crypto.randomBytes(3).toString('hex'); // Generates a random 6-character OTP
+  return crypto.randomBytes(3).toString('hex'); 
 };
 
 app.get('/', (req, res) => {
   res.send('Welcome to the API!');
 });
 
-// Endpoint to get notifications
 app.get('/api/notifications', (req, res) => {
   res.json(notifications);
 });
 
-// Send OTP endpoint
 app.post('/api/send-otp', async (req, res) => {
   const { email } = req.body;
   try {
@@ -149,7 +143,7 @@ app.post('/api/request-password-reset', async (req, res) => {
       .input('email', sql.VarChar, email)
       .query('SELECT * FROM Users WHERE email = @email');
     if (result.recordset.length === 1) {
-      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
       otpStore[email] = otp; // Store OTP
       console.log(`OTP for ${email}: ${otp}`); // Debug log
 
@@ -173,17 +167,17 @@ app.post('/api/reset-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;
   try {
     if (otpStore[email] && otpStore[email] === otp) {
-      const hashedPassword = await bcrypt.hash(newPassword, 10); // Hash the new password before saving it
+      const hashedPassword = await bcrypt.hash(newPassword, 10); 
       const pool = await poolPromise;
       const result = await pool
         .request()
         .input('email', sql.VarChar, email)
-        .input('newPassword', sql.NVarChar, hashedPassword) // Use hashed password
+        .input('newPassword', sql.NVarChar, hashedPassword) 
         .query('UPDATE Users SET password = @newPassword WHERE email = @email');
       delete otpStore[email];
       res.status(200).send('Password reset successful');
 
-      // Add notification
+    
       addNotification(`Password reset for: ${user}`);
     } else {
       res.status(400).send('Invalid OTP');
@@ -194,7 +188,7 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// Change password endpoint
+
 app.post('/api/change-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;
   console.log('Received request for change password:', { email, otp, newPassword });
@@ -222,11 +216,11 @@ app.post('/api/change-password', async (req, res) => {
       return res.status(404).send('User not found');
     }
 
-    delete otpStore[email]; // Clear OTP after password change
+    delete otpStore[email]; 
 
     res.status(200).send('Password changed successfully');
 
-    // Add notification
+    
     addNotification(`Password changed for: ${user}`);
   } catch (err) {
     console.error('Error changing password:', err);
@@ -234,7 +228,7 @@ app.post('/api/change-password', async (req, res) => {
   }
 });
 
-// Register a new user
+
 app.post('/api/register', async (req, res) => {
   const { name, email, password, cluster, clusterLead, role } = req.body;
   if (!name || !email || !password || !cluster || !clusterLead || !role) {
@@ -260,7 +254,6 @@ app.post('/api/register', async (req, res) => {
       .input('role', sql.NVarChar, role)
       .query('INSERT INTO Users (name, email, password, cluster, clusterLead, role) VALUES (@name, @email, @password, @cluster, @clusterLead, @role)');
     
-    // Add notification
     addNotification(`User registered: ${name} (${role})`);
 
     console.log(`User registered with role: ${role}`);
@@ -271,7 +264,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Log in a user
+
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -289,7 +282,7 @@ app.post('/api/login', async (req, res) => {
           { expiresIn: '1h' }
         );
 
-        // Add notification
+        
         // addNotification(`User logged in: ${user.name}`);
 
         console.log(`User logged in with role: ${user.role}`);
@@ -317,7 +310,7 @@ app.post('/api/tasks', async (req, res) => {
       .input('date', sql.Date, date)
       .input('cluster', sql.NVarChar, cluster)
       .input('resourceType', sql.NVarChar, resourceType)
-      .input('assignedTo', sql.NVarChar, assignedTo) // Include assignedTo field
+      .input('assignedTo', sql.NVarChar, assignedTo) 
       .query(`INSERT INTO Task (name, date, cluster, resourceType, assignedTo) OUTPUT INSERTED.id VALUES (@name, @date, @cluster, @resourceType, @assignedTo)`);
     
     const taskId = result.recordset[0].id;
@@ -333,7 +326,7 @@ app.post('/api/tasks', async (req, res) => {
         .query(`INSERT INTO Tasks (task_id, incCr, product, taskType, taskDescription, plannerHour) VALUES (@task_id, @incCr, @product, @taskType, @taskDescription, @plannerHour)`);
     }
     
-    // Add notification
+    
     addNotification(`Task created: ${name}`);
 
     res.status(201).send('Task created successfully');
@@ -345,7 +338,7 @@ app.post('/api/tasks', async (req, res) => {
 
 app.get('/api/export-tasks', authorize(['Team Member', 'Cluster Lead', 'Manager']), async (req, res) => {
   try {
-    const { email, role, cluster } = req.user; // Log the user's role and email
+    const { email, role, cluster } = req.user;
     console.log('Exporting tasks for user:', email, 'with role:', role, 'in cluster:', cluster);
 
     const pool = await poolPromise;
@@ -382,7 +375,7 @@ app.get('/api/export-tasks', authorize(['Team Member', 'Cluster Lead', 'Manager'
 
     const tasks = result.recordset;
 
-    // Format date fields
+    
     tasks.forEach(task => {
       task.date = moment(task.date).format('YYYY-MM-DD');
     });
@@ -395,7 +388,7 @@ app.get('/api/export-tasks', authorize(['Team Member', 'Cluster Lead', 'Manager'
     res.attachment('tasks.csv');
     res.send(csv);
     
-    // Add notification
+    
     addNotification(`Tasks exported as CSV by ${email}`);
   } catch (err) {
     console.error('Error exporting tasks as CSV:', err);
@@ -443,7 +436,7 @@ app.get('/api/tasks', authorize(['Manager', 'Cluster Lead', 'Team Member']), asy
 
     res.json(tasks);
     
-    // Add notification
+    
     // addNotification(`Tasks fetched by ${email}`);
   } catch (err) {
     console.error('Error fetching tasks:', err);
@@ -469,7 +462,7 @@ app.get('/api/tasks/:id', async (req, res) => {
       task.entries = taskEntriesResult.recordset;
       res.json(task);
       
-      // Add notification
+    
       // addNotification(`Task details fetched for task ID: ${id}`);
     } else {
       res.status(404).send('Task not found');
@@ -485,15 +478,15 @@ app.put('/api/tasks/:id', async (req, res) => {
   let { id } = req.params;
   const { actualHour } = req.body;
 
-  // Validate actualHour
+  
   if (actualHour === undefined || isNaN(actualHour)) {
     return res.status(400).send('Invalid actual hour value');
   }
 
-  // Convert id to number
+ 
   id = parseInt(id, 10);
 
-  // Validate id
+  
   if (isNaN(id)) {
     return res.status(400).send('Invalid task ID');
   }
@@ -510,7 +503,7 @@ app.put('/api/tasks/:id', async (req, res) => {
       return res.status(404).send('Task not found');
     }
     
-    // Add notification
+    
     addNotification(`Actual hours updated for task ID: ${id}`);
 
     return res.status(200).send('Task updated successfully');
@@ -565,7 +558,7 @@ app.get('/api/stats/weekly', async (req, res) => {
 
     res.json(result.recordset);
     
-    // Add notification
+    
     // addNotification(`Weekly stats fetched for ${startDate} to ${endDate}`);
   } catch (err) {
     console.error('Error fetching weekly statistics:', err);
@@ -616,7 +609,7 @@ app.get('/api/stats/monthly', async (req, res) => {
 
     res.json(result.recordset);
     
-    // Add notification
+    
     // addNotification(`Monthly stats fetched for ${startDate} to ${endDate}`);
   } catch (err) {
     console.error('Error fetching monthly statistics:', err);
@@ -638,7 +631,7 @@ app.get('/api/stats/clusters', async (req, res) => {
     `);
     res.json(result.recordset);
     
-    // Add notification
+    
     // addNotification(`Cluster utilization stats fetched`);
   } catch (err) {
     console.error('Error fetching cluster utilization:', err);
@@ -646,7 +639,7 @@ app.get('/api/stats/clusters', async (req, res) => {
   }
 });
 // Cron job to check for missing tasks and send alert emails
-cron.schedule('0 14 * * 1-5', async () => {  // Runs every weekday at 7:53 PM
+cron.schedule('0 14 * * 1-5', async () => {  
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
@@ -660,7 +653,7 @@ cron.schedule('0 14 * * 1-5', async () => {  // Runs every weekday at 7:53 PM
     const missingTasksUsers = result.recordset;
 
     for (const user of missingTasksUsers) {
-      // Email options
+      
       const mailOptions = {
         from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
         to: user.email,
@@ -669,7 +662,7 @@ cron.schedule('0 14 * * 1-5', async () => {  // Runs every weekday at 7:53 PM
         text: `Hi ${user.name},\n\nYou have not submitted your Daily Task records. Please don't forget to fill it before 6 PM.\n\nThanks`
       };
 
-      // Send email
+     
       await transporter.sendMail(mailOptions);
       console.log(`Reminder email sent to: ${user.email}`);
     }
@@ -694,7 +687,7 @@ app.get('/api/users', authorize(['Manager']), async (req, res) => {
   }
 });
 
-// In server.js
+
 app.put('/api/users/:id/role', authorize(['Manager']), async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
@@ -707,7 +700,7 @@ app.put('/api/users/:id/role', authorize(['Manager']), async (req, res) => {
       .query('UPDATE Users SET role = @role WHERE id = @id');
     res.send('User role updated successfully');
 
-    // Add notification
+   
     addNotification(`User role updated for user ID: ${id}`);
   } catch (err) {
     console.error('Error updating role:', err);
@@ -739,7 +732,7 @@ app.get('/api/stats/tasks', async (req, res) => {
 
     res.json(result.recordset);
     
-    // Add notification
+   
     // addNotification(`Tasks fetched by cluster: ${cluster}`);
   } catch (err) {
     console.error('Error fetching tasks by cluster:', err);

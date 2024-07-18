@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 import logo from './Mu_sigma_logo.jpg';
@@ -12,6 +12,7 @@ function Navbar() {
     const [showNotifications, setShowNotifications] = useState(false);
     const { user, setUser } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         fetchNotifications();
@@ -93,12 +94,12 @@ function Navbar() {
             <div className="navbar-container">
                 <div className="logo-container">
                     <img src={logo} alt="Logo" className="logo" />
-                </div>
-                <div className="nav-links">
-                    <Link to="/dashboard" className="nav-link">Dashboard</Link>
-                    <Link to="/" className="nav-link">Daily Form</Link>
-                    <Link to="/performance" className="nav-link">Performance</Link>
-                    <Link to="/user-control" className="nav-link">User Control</Link>
+                    <div className="nav-links">
+                        <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>Dashboard</Link>
+                        <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Daily Form</Link>
+                        <Link to="/performance" className={`nav-link ${location.pathname === '/performance' ? 'active' : ''}`}>Performance</Link>
+                        <Link to="/user-control" className={`nav-link ${location.pathname === '/user-control' ? 'active' : ''}`}>User Control</Link>
+                    </div>
                 </div>
                 <div className="user-actions">
                     <div className="notification-icon" onClick={toggleNotifications}>
