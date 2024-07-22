@@ -130,6 +130,7 @@ function FormDataDetails() {
                                         type="checkbox"
                                         checked={completedTasks[index] || false}
                                         onChange={(event) => handleInputChange(index, event)}
+                                        disabled={!isToday(task.date)}
                                     />
                                 </td>
                             </tr>

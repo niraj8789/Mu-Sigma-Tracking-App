@@ -105,18 +105,17 @@ function Dashboard() {
 
     try {
       console.log('Sending request to export tasks with token:', token);
-      const response = await axios.get('http://localhost:5000/api/export-tasks', {
+      const response = await axios.get('http://localhost:5000/api/export-ttasks', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        responseType: 'blob', 
+        responseType: 'blob',
       });
 
-    
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'tasks.csv'); 
+      link.setAttribute('download', 'tasks.csv');
       document.body.appendChild(link);
       link.click();
     } catch (error) {
@@ -153,7 +152,7 @@ function Dashboard() {
           <h2>{task.name}</h2>
           <p>Date: {moment(task.date).format('Do MMMM YYYY')}</p>
           <p><strong>Cluster:</strong> {task.cluster}</p>
-          <p><strong>Resource Type:</strong> {task.resourceType}</p>
+          <p><strong>Total Planned Hours:</strong> {task.totalPlannerHour}</p>
         </div>
       ));
     }
@@ -164,7 +163,7 @@ function Dashboard() {
           <h2>{task.name}</h2>
           <p>Date: {moment(task.date).format('Do MMMM YYYY')}</p>
           <p><strong>Cluster:</strong> {task.cluster}</p>
-          <p><strong>Resource Type:</strong> {task.resourceType}</p>
+          <p><strong>Total Planned Hours:</strong> {task.totalPlannerHour}</p>
         </div>
       ));
     }
@@ -177,7 +176,7 @@ function Dashboard() {
           <h2>{task.name}</h2>
           <p>Date: {moment(task.date).format('Do MMMM YYYY')}</p>
           <p><strong>Cluster:</strong> {task.cluster}</p>
-          <p><strong>Resource Type:</strong> {task.resourceType}</p>
+          <p><strong>Total Planned Hours:</strong> {task.totalPlannerHour}</p>
         </div>
       ));
     }

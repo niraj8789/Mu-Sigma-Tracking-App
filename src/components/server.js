@@ -397,6 +397,7 @@ app.get('/api/export-tasks', authorize(['Team Member', 'Cluster Lead', 'Manager'
 });
 
 // Fetch all tasks
+// Fetch all tasks
 app.get('/api/tasks', authorize(['Manager', 'Cluster Lead', 'Team Member']), async (req, res) => {
   try {
     const { role, cluster, email } = req.user;
@@ -409,14 +410,17 @@ app.get('/api/tasks', authorize(['Manager', 'Cluster Lead', 'Team Member']), asy
         t.date, 
         t.cluster, 
         t.resourceType,
-        t.assignedTo
+        t.assignedTo,
+        SUM(ts.plannerHour) AS totalPlannerHour
       FROM Task t
+      JOIN Tasks ts ON t.id = ts.task_id
+      GROUP BY t.id, t.name, t.date, t.cluster, t.resourceType, t.assignedTo
     `;
 
     if (role === 'Team Member') {
-      query += ` WHERE t.assignedTo = @userEmail`;
+      query += ` HAVING t.assignedTo = @userEmail`;
     } else if (role === 'Cluster Lead') {
-      query += ` WHERE t.cluster = @userCluster`;
+      query += ` HAVING t.cluster = @userCluster`;
     }
 
     const result = await pool
@@ -431,13 +435,11 @@ app.get('/api/tasks', authorize(['Manager', 'Cluster Lead', 'Team Member']), asy
       date: row.date,
       cluster: row.cluster,
       resourceType: row.resourceType,
-      assignedTo: row.assignedTo
+      assignedTo: row.assignedTo,
+      totalPlannerHour: row.totalPlannerHour
     }));
 
     res.json(tasks);
-    
-    
-    // addNotification(`Tasks fetched by ${email}`);
   } catch (err) {
     console.error('Error fetching tasks:', err);
     res.status(500).send('Error fetching tasks');
