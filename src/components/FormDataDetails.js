@@ -17,6 +17,14 @@ function FormDataDetails() {
                 const taskResponse = await axios.get(`http://localhost:5000/api/tasks/${id}`);
                 setTask(taskResponse.data);
                 setEntries(taskResponse.data.entries);
+                const initialActualHours = {};
+                const initialCompletedTasks = {};
+                taskResponse.data.entries.forEach((entry, index) => {
+                    initialActualHours[index] = entry.actualHour || 0;
+                    initialCompletedTasks[index] = entry.completed || false;
+                });
+                setActualHours(initialActualHours);
+                setCompletedTasks(initialCompletedTasks);
             } catch (error) {
                 console.error('Error fetching task details:', error);
             }
@@ -33,7 +41,6 @@ function FormDataDetails() {
                 [index]: checked,
             }));
         } else {
-            // Ensure the value is non-negative and convert it to a number
             const numericValue = Math.max(0, parseFloat(value));
             setActualHours((prev) => ({
                 ...prev,
@@ -48,11 +55,12 @@ function FormDataDetails() {
             for (let i = 0; i < entries.length; i++) {
                 const entry = entries[i];
                 const actualHour = actualHours[i];
+                const completed = completedTasks[i];
                 if (actualHour !== undefined) {
-                    await axios.put(`http://localhost:5000/api/tasks/${entry.id}`, { actualHour });
+                    await axios.put(`http://localhost:5000/api/tasks/${entry.id}`, { actualHour, completed });
                 }
             }
-            alert('Actual hours updated successfully');
+            alert('Actual hours and completion status updated successfully');
         } catch (error) {
             console.error('Error updating actual hours:', error);
             alert('Error updating actual hours');
@@ -109,11 +117,11 @@ function FormDataDetails() {
                                     <input
                                         type="number"
                                         name="actualHour"
-                                        value={actualHours[index] || entry.actualHour || ''}
+                                        value={actualHours[index] || ''}
                                         onChange={(event) => handleInputChange(index, event)}
                                         className="input-actual-hour"
                                         min="0"
-                                        step="0.1"  // Allowing decimal values
+                                        step="0.1"
                                         disabled={!isToday(task.date)}
                                     />
                                 </td>

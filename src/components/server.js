@@ -475,41 +475,32 @@ app.get('/api/tasks/:id', async (req, res) => {
 
 // Update a task's actual hours
 app.put('/api/tasks/:id', async (req, res) => {
-  let { id } = req.params;
-  const { actualHour } = req.body;
+  const { id } = req.params;
+  const { actualHour, completed } = req.body;
 
-  
   if (actualHour === undefined || isNaN(actualHour)) {
-    return res.status(400).send('Invalid actual hour value');
-  }
-
- 
-  id = parseInt(id, 10);
-
-  
-  if (isNaN(id)) {
-    return res.status(400).send('Invalid task ID');
+      return res.status(400).send('Invalid actual hour value');
   }
 
   try {
-    const pool = await poolPromise;
-    const result = await pool
-      .request()
-      .input('id', sql.Int, id)
-      .input('actualHour', sql.Float, actualHour)
-      .query('UPDATE Tasks SET actualHour = @actualHour WHERE id = @id');
+      const pool = await poolPromise;
+      const result = await pool
+          .request()
+          .input('id', sql.Int, id)
+          .input('actualHour', sql.Float, actualHour)
+          .input('completed', sql.Bit, completed)
+          .query('UPDATE Tasks SET actualHour = @actualHour, completed = @completed WHERE id = @id');
 
-    if (result.rowsAffected[0] === 0) {
-      return res.status(404).send('Task not found');
-    }
-    
-    
-    addNotification(`Actual hours updated for task ID: ${id}`);
+      if (result.rowsAffected[0] === 0) {
+          return res.status(404).send('Task not found');
+      }
 
-    return res.status(200).send('Task updated successfully');
+      addNotification(`Actual hours and completion status updated for task ID: ${id}`);
+
+      return res.status(200).send('Task updated successfully');
   } catch (err) {
-    console.error('Error updating task:', err);
-    return res.status(500).send('Error updating task');
+      console.error('Error updating task:', err);
+      return res.status(500).send('Error updating task');
   }
 });
 

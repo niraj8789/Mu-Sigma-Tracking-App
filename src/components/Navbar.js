@@ -46,6 +46,9 @@ function Navbar() {
             if (showNotifications && !event.target.closest('.notification-dropdown') && !event.target.closest('.notification-icon')) {
                 setShowNotifications(false);
             }
+            if (showMenu && !event.target.closest('.user-icon') && !event.target.closest('.dropdown-menu')) {
+                setShowMenu(false);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
@@ -53,7 +56,7 @@ function Navbar() {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showNotifications]);
+    }, [showNotifications, showMenu]);
 
     const markNotificationAsRead = async (index) => {
         try {
@@ -111,7 +114,11 @@ function Navbar() {
                     <div className={`notification-dropdown ${showNotifications ? 'show' : ''}`}>
                         {notifications.length > 0 ? (
                             notifications.map((notification, index) => (
-                                <div key={index} className="notification-item" onClick={() => markNotificationAsRead(index)}>
+                                <div
+                                    key={index}
+                                    className={`notification-item ${notification.read ? 'read' : ''}`}
+                                    onClick={() => markNotificationAsRead(index)}
+                                >
                                     <div className="message">{notification.message}</div>
                                     <div className="timestamp">{moment(notification.timestamp).tz('Asia/Kolkata').format('HH:mm')}</div>
                                 </div>
@@ -121,7 +128,7 @@ function Navbar() {
                         )}
                     </div>
                     {user && user.name && (
-                        <div className="user-icon" onMouseEnter={toggleMenu} onMouseLeave={toggleMenu}>
+                        <div className="user-icon" onClick={toggleMenu}>
                             {getInitials(user.name)}
                             {showMenu && (
                                 <div className="dropdown-menu">
