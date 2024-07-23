@@ -134,6 +134,61 @@ app.post('/api/send-otp', async (req, res) => {
   }
 });
 
+const defaultPassword = 'musigma-gdo@123';
+
+const sendWelcomeEmail = (email, password) => {
+  const mailOptions = {
+    from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
+    to: email,
+    subject: 'Your Account Details',
+    text: `Welcome to Daily Tracker!\n\nYour login details are as follows:\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in for the first time.`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+    } else {
+      console.log('Welcome email sent:', info.response);
+    }
+  });
+};
+
+app.post('/api/add-user', authorize(['Manager']), async (req, res) => {
+  const { name, email, cluster, clusterLead, role } = req.body;
+  if (!name || !email || !cluster || !clusterLead || !role) {
+    return res.status(400).send('All fields are required');
+  }
+  try {
+    const pool = await poolPromise;
+    const checkUser = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT * FROM Users WHERE email = @email');
+    if (checkUser.recordset.length > 0) {
+      return res.status(400).send('Email already exists');
+    }
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    await pool
+      .request()
+      .input('name', sql.NVarChar, name)
+      .input('email', sql.NVarChar, email)
+      .input('password', sql.NVarChar, hashedPassword)
+      .input('cluster', sql.NVarChar, cluster)
+      .input('clusterLead', sql.NVarChar, clusterLead)
+      .input('role', sql.NVarChar, role)
+      .query('INSERT INTO Users (name, email, password, cluster, clusterLead, role) VALUES (@name, @email, @password, @cluster, @clusterLead, @role)');
+    
+    sendWelcomeEmail(email, defaultPassword);
+    addNotification(`New user added: ${name} (${role})`);
+
+    res.status(201).send('User added successfully');
+  } catch (err) {
+    console.error('Error adding user:', err);
+    res.status(500).send('Error adding user');
+  }
+});
+
+
 app.post('/api/request-password-reset', async (req, res) => {
   const { email } = req.body;
   try {
@@ -188,12 +243,41 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
+const sendDeletionEmail = (email,name) => {
+  const mailOptions = {
+    from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
+    to: email,
+    subject: 'Account Deleted',
+    text: `Dear ${name},\n\nYour account has been deleted from Daily Tracker.\n\nIf this was not done internally, please contact your Lead.\n\nBest regards,\nDaily Tracker Team`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+    } else {
+      console.log('Deletion email sent:', info.response);
+    }
+  });
+};
+
 // Delete a user and their associated tasks
 app.delete('/api/users/:email', authorize(['Manager', 'Cluster Lead']), async (req, res) => {
   const { email } = req.params;
 
   try {
     const pool = await poolPromise;
+
+    // Fetch the user's name
+    const userResult = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT name FROM Users WHERE email = @email');
+    
+    if (userResult.recordset.length === 0) {
+      return res.status(404).send('User not found');
+    }
+
+    const userName = userResult.recordset[0].name;
 
     // First, delete the user's tasks
     await pool
@@ -216,6 +300,9 @@ app.delete('/api/users/:email', authorize(['Manager', 'Cluster Lead']), async (r
       return res.status(404).send('User not found');
     }
 
+    // Send deletion email with user's name
+    sendDeletionEmail(email, userName);
+
     addNotification(`User and tasks deleted for: ${email}`);
 
     res.status(200).send('User and associated tasks deleted successfully');
@@ -224,6 +311,7 @@ app.delete('/api/users/:email', authorize(['Manager', 'Cluster Lead']), async (r
     res.status(500).send('Error deleting user and tasks');
   }
 });
+
 
 
 app.post('/api/change-password', async (req, res) => {
