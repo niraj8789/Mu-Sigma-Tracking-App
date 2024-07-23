@@ -188,6 +188,43 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
+// Delete a user and their associated tasks
+app.delete('/api/users/:email', authorize(['Manager', 'Cluster Lead']), async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    const pool = await poolPromise;
+
+    // First, delete the user's tasks
+    await pool
+      .request()
+      .input('assignedTo', sql.NVarChar, email)
+      .query('DELETE FROM Tasks WHERE task_id IN (SELECT id FROM Task WHERE assignedTo = @assignedTo)');
+
+    await pool
+      .request()
+      .input('assignedTo', sql.NVarChar, email)
+      .query('DELETE FROM Task WHERE assignedTo = @assignedTo');
+
+    // Then, delete the user
+    const result = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .query('DELETE FROM Users WHERE email = @email');
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).send('User not found');
+    }
+
+    addNotification(`User and tasks deleted for: ${email}`);
+
+    res.status(200).send('User and associated tasks deleted successfully');
+  } catch (err) {
+    console.error('Error deleting user and tasks:', err);
+    res.status(500).send('Error deleting user and tasks');
+  }
+});
+
 
 app.post('/api/change-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;

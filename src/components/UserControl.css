@@ -72,6 +72,21 @@
   background-color: #ecf0f1;
 }
 
+.delete-button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 5px;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
+}
+
 .error {
   color: #e74c3c;
   font-size: 1em;
@@ -82,12 +97,12 @@
 /* Add some animations */
 @keyframes fadeIn {
   from {
-      opacity: 0;
-      transform: translateY(-10px);
+    opacity: 0;
+    transform: translateY(-10px);
   }
   to {
-      opacity: 1;
-      transform: translateY(0);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

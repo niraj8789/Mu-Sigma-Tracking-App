@@ -15,8 +15,8 @@ function UserControl() {
         const token = localStorage.getItem('authToken'); // Get the token from localStorage
         const response = await axios.get('http://localhost:5000/api/users', {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
         setUsers(response.data);
       } catch (error) {
@@ -31,17 +31,46 @@ function UserControl() {
   const handleRoleChange = async (userId, newRole) => {
     try {
       const token = localStorage.getItem('authToken'); // Get the token from localStorage
-      await axios.put(`http://localhost:5000/api/users/${userId}/role`, { role: newRole }, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      await axios.put(
+        `http://localhost:5000/api/users/${userId}/role`,
+        { role: newRole },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       setUsers((prevUsers) =>
-        prevUsers.map((user) => (user.id === userId ? { ...user, role: newRole } : user))
+        prevUsers.map((user) =>
+          user.id === userId ? { ...user, role: newRole } : user
+        )
       );
     } catch (error) {
       console.error('Error updating role:', error);
       setError('Error updating role');
+    }
+  };
+
+  // Function to delete a user
+  const handleDelete = async (userEmail) => {
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this user? This action cannot be undone.'
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('authToken'); // Get the token from localStorage
+      await axios.delete(`http://localhost:5000/api/users/${userEmail}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setUsers((prevUsers) => prevUsers.filter((user) => user.email !== userEmail));
+      alert('User and associated tasks deleted successfully.');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setError('Error deleting user');
     }
   };
 
@@ -65,7 +94,6 @@ function UserControl() {
               <td>{user.name}</td>
               <td>{user.email}</td>
               <td>{user.cluster}</td>
-              <td>{user.role}</td>
               <td>
                 <select
                   value={user.role}
@@ -77,6 +105,14 @@ function UserControl() {
                     </option>
                   ))}
                 </select>
+              </td>
+              <td>
+                <button
+                  className="delete-button"
+                  onClick={() => handleDelete(user.email)}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}
