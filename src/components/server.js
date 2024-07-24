@@ -153,7 +153,7 @@ const sendWelcomeEmail = (email, password) => {
   });
 };
 
-app.post('/api/add-user', authorize(['Manager']), async (req, res) => {
+app.post('/api/add-user', authorize(['Manager', 'Cluster Lead']), async (req, res) => {
   const { name, email, cluster, clusterLead, role } = req.body;
   if (!name || !email || !cluster || !clusterLead || !role) {
     return res.status(400).send('All fields are required');
@@ -165,7 +165,7 @@ app.post('/api/add-user', authorize(['Manager']), async (req, res) => {
       .input('email', sql.NVarChar, email)
       .query('SELECT * FROM Users WHERE email = @email');
     if (checkUser.recordset.length > 0) {
-      return res.status(400).send('Email already exists');
+      return res.status(400).send({ message: 'Email already exists' });
     }
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     await pool
@@ -176,7 +176,8 @@ app.post('/api/add-user', authorize(['Manager']), async (req, res) => {
       .input('cluster', sql.NVarChar, cluster)
       .input('clusterLead', sql.NVarChar, clusterLead)
       .input('role', sql.NVarChar, role)
-      .query('INSERT INTO Users (name, email, password, cluster, clusterLead, role) VALUES (@name, @email, @password, @cluster, @clusterLead, @role)');
+      .input('isDeleted', sql.Bit, 0)
+      .query('INSERT INTO Users (name, email, password, cluster, clusterLead, role, isDeleted) VALUES (@name, @email, @password, @cluster, @clusterLead, @role, @isDeleted)');
     
     sendWelcomeEmail(email, defaultPassword);
     addNotification(`New user added: ${name} (${role})`);
@@ -187,6 +188,51 @@ app.post('/api/add-user', authorize(['Manager']), async (req, res) => {
     res.status(500).send('Error adding user');
   }
 });
+app.put('/api/users/:email/toggle', authorize(['Manager', 'Cluster Lead']), async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    const pool = await poolPromise;
+    console.log(`Toggling status for user: ${email}`);
+
+    const userResult = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT IsDeleted FROM Users WHERE email = @email');
+    
+    if (userResult.recordset.length === 0) {
+      
+      return res.status(404).send('User not found');
+    }
+
+    const currentStatus = userResult.recordset[0].IsDeleted;
+    const newStatus = currentStatus === true ? false : true;
+
+
+    // Update the user status
+    const updateResult = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .input('IsDeleted', sql.Bit, newStatus)
+      .query('UPDATE Users SET IsDeleted = @IsDeleted WHERE email = @email');
+
+    // Verify the update
+    const verifyResult = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT IsDeleted FROM Users WHERE email = @email');
+
+    if (verifyResult.recordset[0].IsDeleted === newStatus) {
+      addNotification(`User ${newStatus === true ? 'deactivated' : 'activated'}: ${email}`);
+      res.status(200).send(`User ${newStatus === true ? 'deactivated' : 'activated'} successfully`);
+    } else {
+      res.status(500).send('Failed to update user status in database');
+    }
+  } catch (err) {
+    res.status(500).send('Error toggling user status');
+  }
+});
+
 
 
 app.post('/api/request-password-reset', async (req, res) => {
@@ -261,7 +307,7 @@ const sendDeletionEmail = (email,name) => {
 };
 
 // Delete a user and their associated tasks
-app.delete('/api/users/:email', authorize(['Manager', 'Cluster Lead']), async (req, res) => {
+app.put('/api/users/:email', authorize(['Manager']), async (req, res) => {
   const { email } = req.params;
 
   try {
@@ -279,36 +325,26 @@ app.delete('/api/users/:email', authorize(['Manager', 'Cluster Lead']), async (r
 
     const userName = userResult.recordset[0].name;
 
-    // First, delete the user's tasks
-    await pool
-      .request()
-      .input('assignedTo', sql.NVarChar, email)
-      .query('DELETE FROM Tasks WHERE task_id IN (SELECT id FROM Task WHERE assignedTo = @assignedTo)');
-
-    await pool
-      .request()
-      .input('assignedTo', sql.NVarChar, email)
-      .query('DELETE FROM Task WHERE assignedTo = @assignedTo');
-
-    // Then, delete the user
+    // Deactivate the user
     const result = await pool
       .request()
       .input('email', sql.NVarChar, email)
-      .query('DELETE FROM Users WHERE email = @email');
+      .input('IsDeleted', sql.Bit, 1)
+      .query('UPDATE Users SET IsDeleted = @IsDeleted WHERE email = @email');
 
     if (result.rowsAffected[0] === 0) {
       return res.status(404).send('User not found');
     }
 
-    // Send deletion email with user's name
+    // Send deactivation email with user's name
     sendDeletionEmail(email, userName);
 
-    addNotification(`User and tasks deleted for: ${email}`);
+    addNotification(`User deactivated: ${email}`);
 
-    res.status(200).send('User and associated tasks deleted successfully');
+    res.status(200).send('User deactivated successfully');
   } catch (err) {
-    console.error('Error deleting user and tasks:', err);
-    res.status(500).send('Error deleting user and tasks');
+    console.error('Error deactivating user:', err);
+    res.status(500).send('Error deactivating user');
   }
 });
 
@@ -397,7 +433,7 @@ app.post('/api/login', async (req, res) => {
     const result = await pool
       .request()
       .input('email', sql.VarChar, email)
-      .query('SELECT * FROM Users WHERE email = @email');
+      .query('SELECT * FROM Users WHERE email = @email AND IsDeleted = 0');
     if (result.recordset.length === 1) {
       const user = result.recordset[0];
       if (await bcrypt.compare(password, user.password)) {
@@ -407,10 +443,6 @@ app.post('/api/login', async (req, res) => {
           { expiresIn: '1h' }
         );
 
-        
-        // addNotification(`User logged in: ${user.name}`);
-
-        console.log(`User logged in with role: ${user.role}`);
         res.json({ token, user: { id: user.id, name: user.name, email: user.email, cluster: user.cluster, role: user.role } });
       } else {
         res.status(401).json({ error: 'Invalid email or password' });
@@ -539,6 +571,8 @@ app.get('/api/tasks', authorize(['Manager', 'Cluster Lead', 'Team Member']), asy
         SUM(ts.plannerHour) AS totalPlannerHour
       FROM Task t
       JOIN Tasks ts ON t.id = ts.task_id
+      JOIN Users u ON u.email = t.assignedTo
+      WHERE u.IsDeleted = 0
       GROUP BY t.id, t.name, t.date, t.cluster, t.resourceType, t.assignedTo
     `;
 
@@ -644,7 +678,8 @@ app.get('/api/stats/weekly', async (req, res) => {
         SUM(ts.actualHour) AS totalActualHour
       FROM Task t
       JOIN Tasks ts ON t.id = ts.task_id
-      WHERE 1 = 1
+      JOIN Users u ON t.assignedTo = u.email
+      WHERE u.IsDeleted = 0
     `;
 
     if (startDate && endDate) {
@@ -675,15 +710,13 @@ app.get('/api/stats/weekly', async (req, res) => {
       .query(query);
 
     res.json(result.recordset);
-    
-    
+
     // addNotification(`Weekly stats fetched for ${startDate} to ${endDate}`);
   } catch (err) {
     console.error('Error fetching weekly statistics:', err);
     res.status(500).send('Error fetching weekly statistics');
   }
 });
-
 
 // Fetch monthly statistics with filters
 app.get('/api/stats/monthly', async (req, res) => {
@@ -744,18 +777,20 @@ app.get('/api/stats/clusters', async (req, res) => {
         SUM(ts.plannerHour) AS totalPlannerHour
       FROM Task t
       JOIN Tasks ts ON t.id = ts.task_id
+      JOIN Users u ON t.assignedTo = u.email
+      WHERE u.IsDeleted = 0
       GROUP BY t.cluster
       ORDER BY totalPlannerHour DESC
     `);
     res.json(result.recordset);
-    
-    
+
     // addNotification(`Cluster utilization stats fetched`);
   } catch (err) {
     console.error('Error fetching cluster utilization:', err);
     res.status(500).send('Error fetching cluster utilization');
   }
 });
+
 // Cron job to check for missing tasks and send alert emails
 cron.schedule('0 14 * * 1-5', async () => {  
   try {
@@ -794,16 +829,38 @@ cron.schedule('0 14 * * 1-5', async () => {
 });
 
 
+app.get('/api/users/:email', authorize(['Manager', 'Cluster Lead']), async (req, res) => {
+  const { email } = req.params;
+  try {
+    const pool = await poolPromise;
+    const result = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT id, name, email, cluster, role FROM Users WHERE email = @email AND IsDeleted = 0');
+    if (result.recordset.length === 0) {
+      return res.status(404).send('User not found');
+    }
+    res.json(result.recordset[0]);
+  } catch (err) {
+    console.error('Error fetching user:', err);
+    res.status(500).send('Error fetching user');
+  }
+});
+// New endpoint to fetch all users
 app.get('/api/users', authorize(['Manager']), async (req, res) => {
   try {
     const pool = await poolPromise;
-    const result = await pool.request().query('SELECT id, name, email, cluster, role FROM Users');
+    const result = await pool
+      .request()
+      .query('SELECT id, name, email, cluster, role, IsDeleted FROM Users');
     res.json(result.recordset);
   } catch (err) {
     console.error('Error fetching users:', err);
     res.status(500).send('Error fetching users');
   }
 });
+
+
 
 
 app.put('/api/users/:id/role', authorize(['Manager']), async (req, res) => {

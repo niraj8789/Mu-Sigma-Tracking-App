@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext'; // Import useAuth hook
+import { useAuth } from '../context/AuthContext';
 import './UserControl.css';
 
 function UserControl() {
-  const { user } = useAuth(); // Get user from AuthContext
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
-  const [roles] = useState(['Team Member', 'Cluster Lead', 'Manager']); // Immutable roles
+  const [roles] = useState(['Team Member', 'Cluster Lead', 'Manager']);
   const [error, setError] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false); // State to toggle the add user form
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -17,14 +17,15 @@ function UserControl() {
     role: 'Team Member'
   });
 
+  // Fetch users when the component mounts
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem('authToken'); // Get the token from localStorage
+        const token = localStorage.getItem('authToken');
         const response = await axios.get('http://localhost:5000/api/users', {
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         });
         setUsers(response.data);
       } catch (error) {
@@ -36,22 +37,17 @@ function UserControl() {
     fetchUsers();
   }, []);
 
+  // Handle role change
   const handleRoleChange = async (userId, newRole) => {
     try {
-      const token = localStorage.getItem('authToken'); // Get the token from localStorage
-      await axios.put(
-        `http://localhost:5000/api/users/${userId}/role`,
-        { role: newRole },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const token = localStorage.getItem('authToken');
+      await axios.put(`http://localhost:5000/api/users/${userId}/role`, { role: newRole }, {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      });
       setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === userId ? { ...user, role: newRole } : user
-        )
+        prevUsers.map((user) => (user.id === userId ? { ...user, role: newRole } : user))
       );
     } catch (error) {
       console.error('Error updating role:', error);
@@ -59,14 +55,15 @@ function UserControl() {
     }
   };
 
+  // Handle user addition
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('authToken'); // Get the token from localStorage
+      const token = localStorage.getItem('authToken');
       await axios.post('http://localhost:5000/api/add-user', newUser, {
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
       setUsers((prevUsers) => [...prevUsers, newUser]);
       setShowAddForm(false);
@@ -75,105 +72,110 @@ function UserControl() {
         email: '',
         cluster: '',
         clusterLead: '',
-        role: 'Team Member',
+        role: 'Team Member'
       });
     } catch (error) {
-      console.error('Error adding user:', error);
-      setError('Error adding user');
+      if (error.response && error.response.data.message === 'Email already exists') {
+        alert('User with this email already exists.');
+      } else {
+        console.error('Error adding user:', error);
+        setError('Error adding user');
+      }
     }
   };
 
-  const handleDelete = async (userEmail) => {
-    const confirmDelete = window.confirm(
-      'Are you sure you want to delete this user? This action cannot be undone.'
-    );
-
-    if (!confirmDelete) return;
-
+  // Handle user activation/deactivation
+  const handleToggleStatus = async (userEmail) => {
     try {
-      const token = localStorage.getItem('authToken'); // Get the token from localStorage
-      await axios.delete(`http://localhost:5000/api/users/${userEmail}`, {
+      const token = localStorage.getItem('authToken');
+      await axios.put(`http://localhost:5000/api/users/${userEmail}/toggle`, {}, {
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
-      setUsers((prevUsers) => prevUsers.filter((user) => user.email !== userEmail));
-      alert('User and associated tasks deleted successfully.');
+  
+      // Fetch users again to reflect the updated status
+      const response = await axios.get('http://localhost:5000/api/users', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setUsers(response.data);
     } catch (error) {
-      console.error('Error deleting user:', error);
-      setError('Error deleting user');
+      console.error('Error toggling user status:', error);
+      setError('Error toggling user status');
     }
   };
+  
 
   return (
     <div className="user-control">
       <h1 className="user-control-heading">User Management</h1>
       {error && <div className="error">{error}</div>}
       {user.role === 'Manager' || user.role === 'Cluster Lead' ? (
-        <>
-          <button className="add-user-btn" onClick={() => setShowAddForm(!showAddForm)}>
-            +
-          </button>
-          {showAddForm && (
-            <form onSubmit={handleAddUser} className="add-user-form">
-              <div className="form-group">
-                <label>Name:</label>
-                <input
-                  type="text"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="form-control"
-                />
-              </div>
-              <div className="form-group">
-                <label>Email:</label>
-                <input
-                  type="text"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="form-control"
-                />
-              </div>
-              <div className="form-group">
-                <label>Cluster:</label>
-                <input
-                  type="text"
-                  value={newUser.cluster}
-                  onChange={(e) => setNewUser({ ...newUser, cluster: e.target.value })}
-                  className="form-control"
-                />
-              </div>
-              <div className="form-group">
-                <label>Cluster Lead:</label>
-                <input
-                  type="text"
-                  value={newUser.clusterLead}
-                  onChange={(e) => setNewUser({ ...newUser, clusterLead: e.target.value })}
-                  className="form-control"
-                />
-              </div>
-              <div className="form-group">
-                <label>Role:</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="form-control"
-                >
-                  {roles.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <p>Note: The default password will be "musigma-gdo@123". An email will be sent to the user with the login details.</p>
-              <button type="submit" className="btn-submit">
-                Add User
-              </button>
-            </form>
-          )}
-        </>
+        <button className="add-user-btn" onClick={() => setShowAddForm(!showAddForm)}>
+          +
+        </button>
       ) : null}
+      {showAddForm && (
+        <form onSubmit={handleAddUser} className="add-user-form">
+          <div className="form-group">
+            <label>Name:</label>
+            <input
+              type="text"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              className="form-control"
+            />
+          </div>
+          <div className="form-group">
+            <label>Email:</label>
+            <input
+              type="text"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              className="form-control"
+            />
+          </div>
+          <div className="form-group">
+            <label>Cluster:</label>
+            <input
+              type="text"
+              value={newUser.cluster}
+              onChange={(e) => setNewUser({ ...newUser, cluster: e.target.value })}
+              className="form-control"
+            />
+          </div>
+          <div className="form-group">
+            <label>Cluster Lead:</label>
+            <input
+              type="text"
+              value={newUser.clusterLead}
+              onChange={(e) => setNewUser({ ...newUser, clusterLead: e.target.value })}
+              className="form-control"
+            />
+          </div>
+          <div className="form-group">
+            <label>Role:</label>
+            <select
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+              className="form-control"
+            >
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p>Note: The default password will be "musigma-gdo@123". An email will be sent to the user with the login details.</p>
+          <button type="submit" className="btn-submit">
+            Add User
+          </button>
+          {error && <div className="error">{error}</div>}
+        </form>
+      )}
       <table className="user-table">
         <thead>
           <tr>
@@ -181,15 +183,18 @@ function UserControl() {
             <th>Email</th>
             <th>Cluster</th>
             <th>Role</th>
+            <th>Change Role</th>
+            <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {users.map((user) => (
-            <tr key={user.id}>
+            <tr key={user.id} className={user.IsDeleted ? 'deactivated' : ''}>
               <td>{user.name}</td>
               <td>{user.email}</td>
               <td>{user.cluster}</td>
+              <td>{user.role}</td>
               <td>
                 <select
                   value={user.role}
@@ -202,12 +207,13 @@ function UserControl() {
                   ))}
                 </select>
               </td>
+              <td>{user.IsDeleted ? 'Deactivated' : 'Active'}</td>
               <td>
                 <button
-                  className="delete-button"
-                  onClick={() => handleDelete(user.email)}
+                  className="toggle-status-button"
+                  onClick={() => handleToggleStatus(user.email)}
                 >
-                  Delete
+                  {user.IsDeleted ? 'Activate' : 'Deactivate'}
                 </button>
               </td>
             </tr>
