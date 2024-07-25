@@ -177,49 +177,49 @@ function UserControl() {
         </form>
       )}
       <table className="user-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Cluster</th>
-            <th>Role</th>
-            <th>Change Role</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id} className={user.IsDeleted ? 'deactivated' : ''}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
-              <td>{user.cluster}</td>
-              <td>{user.role}</td>
-              <td>
-                <select
-                  value={user.role}
-                  onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                >
-                  {roles.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td>{user.IsDeleted ? 'Deactivated' : 'Active'}</td>
-              <td>
-                <button
-                  className="toggle-status-button"
-                  onClick={() => handleToggleStatus(user.email)}
-                >
-                  {user.IsDeleted ? 'Activate' : 'Deactivate'}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Cluster</th>
+      <th>Role</th>
+      <th>Change Role</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {users.map((user) => (
+      <tr key={user.id} className={user.IsDeleted ? 'deactivated' : ''}>
+        <td>{user.name}</td>
+        <td>{user.email}</td>
+        <td>{user.cluster}</td>
+        <td>{user.role}</td>
+        <td>
+          <select
+            value={user.role}
+            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+          >
+            {roles.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+        </td>
+        <td>
+          <label className="toggle-switch">
+            <input
+              type="checkbox"
+              checked={!user.IsDeleted}
+              onChange={() => handleToggleStatus(user.email)}
+            />
+            <span className="toggle-switch-slider"></span>
+          </label>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
     </div>
   );
 }
