@@ -852,11 +852,33 @@ app.get('/api/users', authorize(['Manager']), async (req, res) => {
     const pool = await poolPromise;
     const result = await pool
       .request()
-      .query('SELECT id, name, email, cluster, role, IsDeleted FROM Users');
+      .query('SELECT id, name, email, cluster,clusterLead,role, IsDeleted FROM Users');
     res.json(result.recordset);
   } catch (err) {
     console.error('Error fetching users:', err);
     res.status(500).send('Error fetching users');
+  }
+});
+
+// Update Cluster Lead
+app.put('/api/users/:id/clusterLead', authorize(['Manager', 'Cluster Lead']), async (req, res) => {
+  const { id } = req.params;
+  const { clusterLead } = req.body;
+
+  try {
+    const pool = await poolPromise;
+    await pool
+      .request()
+      .input('id', sql.Int, id)
+      .input('clusterLead', sql.NVarChar, clusterLead)
+      .query('UPDATE Users SET clusterLead = @clusterLead WHERE id = @id');
+      
+    res.send('Cluster lead updated successfully');
+
+    addNotification(`Cluster lead updated for user ID: ${id}`);
+  } catch (err) {
+    console.error('Error updating cluster lead:', err);
+    res.status(500).send('Error updating cluster lead');
   }
 });
 
