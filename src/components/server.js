@@ -67,6 +67,25 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+const sendDeletionEmail = async (email, name) => {
+  console.log(`Attempting to send deletion email to: ${email}`);
+  const mailOptions = {
+    from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
+    to: email,
+    subject: 'Account Deleted',
+    text: `Dear ${name},\n\nYour account has been deleted from Daily Tracker.\n\nIf this was not done internally, please contact your Lead.\n\nBest regards,\nDaily Tracker Team`
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Deletion email sent:', info.response);
+  } catch (error) {
+    console.error('Error sending deletion email:', error);
+  }
+};
+
+
+
 const sendOtpEmail = (email, otp) => {
   const mailOptions = {
     from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
@@ -195,22 +214,22 @@ app.put('/api/users/:email/toggle', authorize(['Manager', 'Cluster Lead']), asyn
     const pool = await poolPromise;
     console.log(`Toggling status for user: ${email}`);
 
+    // Fetch user details including name and current status
     const userResult = await pool
       .request()
       .input('email', sql.NVarChar, email)
-      .query('SELECT IsDeleted FROM Users WHERE email = @email');
-    
+      .query('SELECT name, IsDeleted FROM Users WHERE email = @email');
+
     if (userResult.recordset.length === 0) {
-      
+      console.error(`User not found for email: ${email}`);
       return res.status(404).send('User not found');
     }
 
-    const currentStatus = userResult.recordset[0].IsDeleted;
+    const { name, IsDeleted: currentStatus } = userResult.recordset[0];
     const newStatus = currentStatus === true ? false : true;
 
-
     // Update the user status
-    const updateResult = await pool
+    await pool
       .request()
       .input('email', sql.NVarChar, email)
       .input('IsDeleted', sql.Bit, newStatus)
@@ -223,16 +242,23 @@ app.put('/api/users/:email/toggle', authorize(['Manager', 'Cluster Lead']), asyn
       .query('SELECT IsDeleted FROM Users WHERE email = @email');
 
     if (verifyResult.recordset[0].IsDeleted === newStatus) {
+      // Add notification
       addNotification(`User ${newStatus === true ? 'deactivated' : 'activated'}: ${email}`);
+
+      // Send email if the user is deactivated
+      if (newStatus === true) {
+        sendDeletionEmail(email, name); // Send the email if user is deactivated
+      }
+
       res.status(200).send(`User ${newStatus === true ? 'deactivated' : 'activated'} successfully`);
     } else {
       res.status(500).send('Failed to update user status in database');
     }
   } catch (err) {
+    console.error('Error toggling user status:', err);
     res.status(500).send('Error toggling user status');
   }
 });
-
 
 
 app.post('/api/request-password-reset', async (req, res) => {
@@ -288,67 +314,6 @@ app.post('/api/reset-password', async (req, res) => {
     res.status(500).send('Error resetting password');
   }
 });
-
-const sendDeletionEmail = (email,name) => {
-  const mailOptions = {
-    from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
-    to: email,
-    subject: 'Account Deleted',
-    text: `Dear ${name},\n\nYour account has been deleted from Daily Tracker.\n\nIf this was not done internally, please contact your Lead.\n\nBest regards,\nDaily Tracker Team`
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Error sending email:', error);
-    } else {
-      console.log('Deletion email sent:', info.response);
-    }
-  });
-};
-
-// Delete a user and their associated tasks
-app.put('/api/users/:email', authorize(['Manager']), async (req, res) => {
-  const { email } = req.params;
-
-  try {
-    const pool = await poolPromise;
-
-    // Fetch the user's name
-    const userResult = await pool
-      .request()
-      .input('email', sql.NVarChar, email)
-      .query('SELECT name FROM Users WHERE email = @email');
-    
-    if (userResult.recordset.length === 0) {
-      return res.status(404).send('User not found');
-    }
-
-    const userName = userResult.recordset[0].name;
-
-    // Deactivate the user
-    const result = await pool
-      .request()
-      .input('email', sql.NVarChar, email)
-      .input('IsDeleted', sql.Bit, 1)
-      .query('UPDATE Users SET IsDeleted = @IsDeleted WHERE email = @email');
-
-    if (result.rowsAffected[0] === 0) {
-      return res.status(404).send('User not found');
-    }
-
-    // Send deactivation email with user's name
-    sendDeletionEmail(email, userName);
-
-    addNotification(`User deactivated: ${email}`);
-
-    res.status(200).send('User deactivated successfully');
-  } catch (err) {
-    console.error('Error deactivating user:', err);
-    res.status(500).send('Error deactivating user');
-  }
-});
-
-
 
 app.post('/api/change-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;
@@ -792,7 +757,7 @@ app.get('/api/stats/clusters', async (req, res) => {
 });
 
 // Cron job to check for missing tasks and send alert emails
-cron.schedule('0 14 * * 1-5', async () => {  
+cron.schedule('0 14 * * 1-5', async () => {
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
@@ -801,12 +766,11 @@ cron.schedule('0 14 * * 1-5', async () => {
              (SELECT TOP 1 email FROM Users WHERE role = 'Cluster Lead' AND cluster = u.cluster) AS clusterLeadEmail
       FROM Users u
       LEFT JOIN Task t ON u.email = t.assignedTo AND CAST(t.date AS DATE) = CAST(GETDATE() AS DATE)
-      WHERE t.id IS NULL AND u.role = 'Team Member'
+      WHERE t.id IS NULL AND u.role = 'Team Member' AND u.IsDeleted = 0
     `);
     const missingTasksUsers = result.recordset;
 
     for (const user of missingTasksUsers) {
-      
       const mailOptions = {
         from: 'Daily Tracker Admin <niraj.sigma2@gmail.com>',
         to: user.email,
@@ -815,7 +779,6 @@ cron.schedule('0 14 * * 1-5', async () => {
         text: `Hi ${user.name},\n\nYou have not submitted your Daily Task records. Please don't forget to fill it before 6 PM.\n\nThanks`
       };
 
-     
       await transporter.sendMail(mailOptions);
       console.log(`Reminder email sent to: ${user.email}`);
     }
@@ -827,6 +790,7 @@ cron.schedule('0 14 * * 1-5', async () => {
     console.error('Error checking for missing tasks:', err);
   }
 });
+
 
 
 app.get('/api/users/:email', authorize(['Manager', 'Cluster Lead']), async (req, res) => {
