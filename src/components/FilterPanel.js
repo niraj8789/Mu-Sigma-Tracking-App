@@ -4,7 +4,7 @@ import './FilterPanel.css';
 function FilterPanel({ filters, handleFilterChange, handleClearFilters }) {
   return (
     <div className="filter-panel">
-      <label>
+      <label className="filter-label">
         Start Date:
         <input
           type="date"
@@ -14,7 +14,7 @@ function FilterPanel({ filters, handleFilterChange, handleClearFilters }) {
           className="filter-input"
         />
       </label>
-      <label>
+      <label className="filter-label">
         End Date:
         <input
           type="date"
@@ -25,7 +25,7 @@ function FilterPanel({ filters, handleFilterChange, handleClearFilters }) {
         />
       </label>
       {filters.userRole === 'Manager' && (
-        <label>
+        <label className="filter-label">
           Cluster:
           <input
             type="text"
