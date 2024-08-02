@@ -1,14 +1,90 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { Bar, Line, Pie } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { CSVLink } from 'react-csv';
-import { FaChartBar, FaFilter, FaChartPie, FaTimes, FaChartLine, FaDownload } from 'react-icons/fa';
+import {
+  FaChartBar,
+  FaChartLine,
+  FaDownload,
+  FaChevronDown,
+  FaFilter,
+  FaUndo,
+  FaTimes,
+} from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { motion } from 'framer-motion';
+import {
+  ChakraProvider,
+  Box,
+  Button,
+  Select,
+  Text,
+  Flex,
+  Grid,
+} from '@chakra-ui/react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import styled from 'styled-components';
+import { AnimatePresence, motion as m } from 'framer-motion';
 import './PerformanceVisuals.css';
+
+// Styled components
+const ChartContainer = styled(motion.div)`
+  margin: 20px 0;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 400px;
+  max-width: 1200px;
+  @media (max-width: 768px) {
+    height: 300px;
+  }
+`;
+
+const containerVariants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.8,
+      type: 'spring',
+      damping: 15,
+    },
+  },
+};
+
+const buttonVariants = {
+  hover: {
+    scale: 1.05,
+    boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.15)',
+    transition: {
+      yoyo: Infinity,
+      duration: 0.3,
+    },
+  },
+};
+
+const chartVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      delay: 0.3,
+    },
+  },
+};
 
 const PerformanceVisuals = () => {
   const [view, setView] = useState('GDO');
@@ -20,13 +96,19 @@ const PerformanceVisuals = () => {
   const [clusterData, setClusterData] = useState(null);
   const [deepFilterData, setDeepFilterData] = useState(null);
   const [selectedCluster, setSelectedCluster] = useState('All');
-  const [metrics, setMetrics] = useState({ max: '', min: '', avg: '', stddev: '', median: '' });
-  const [showDetailedMetrics, setShowDetailedMetrics] = useState(false);
+  const [metrics, setMetrics] = useState({
+    max: '',
+    min: '',
+    avg: '',
+  });
   const [chartType, setChartType] = useState('Bar');
-  const [showCumulative, setShowCumulative] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState('name');
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+
+  const filterRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,7 +117,7 @@ const PerformanceVisuals = () => {
       try {
         const [weeklyRes, clusterRes] = await Promise.all([
           axios.get('http://localhost:5000/api/stats/weekly'),
-          axios.get('http://localhost:5000/api/stats/clusters')
+          axios.get('http://localhost:5000/api/stats/clusters'),
         ]);
         setWeeklyData(weeklyRes.data);
         setFilteredData(weeklyRes.data);
@@ -43,6 +125,10 @@ const PerformanceVisuals = () => {
       } catch (error) {
         setError('Error fetching data');
         console.error('Error fetching data:', error);
+        toast.error('Failed to fetch data. Please try again.', {
+          position: toast.POSITION.TOP_RIGHT,
+          autoClose: 3000,
+        });
       } finally {
         setLoading(false);
       }
@@ -50,17 +136,22 @@ const PerformanceVisuals = () => {
     fetchData();
   }, []);
 
-  const processChartData = (data) => {
-    const labels = data.map(item => item.name);
-    const plannerHours = data.map(item => item.totalPlannerHour);
-    const actualHours = data.map(item => item.totalActualHour);
-
-    if (showCumulative) {
-      for (let i = 1; i < plannerHours.length; i++) {
-        plannerHours[i] += plannerHours[i - 1];
-        actualHours[i] += actualHours[i - 1];
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowFilterModal(false);
       }
-    }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [filterRef]);
+
+  const processChartData = (data) => {
+    const labels = data.map((item) => item.name);
+    const plannerHours = data.map((item) => item.totalPlannerHour);
+    const actualHours = data.map((item) => item.totalActualHour);
 
     return {
       labels,
@@ -70,22 +161,22 @@ const PerformanceVisuals = () => {
           data: plannerHours,
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
           borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1
+          borderWidth: 1,
         },
         {
           label: 'Actual Hours',
           data: actualHours,
           backgroundColor: 'rgba(75, 192, 192, 0.2)',
           borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 1
-        }
-      ]
+          borderWidth: 1,
+        },
+      ],
     };
   };
 
   const processClusterChartData = (data) => {
-    const labels = data.map(item => item.taskType);
-    const plannerHours = data.map(item => item.totalPlannerHour);
+    const labels = data.map((item) => item.taskType);
+    const plannerHours = data.map((item) => item.totalPlannerHour);
 
     return {
       labels,
@@ -95,9 +186,9 @@ const PerformanceVisuals = () => {
           data: plannerHours,
           backgroundColor: 'rgba(153, 102, 255, 0.2)',
           borderColor: 'rgba(153, 102, 255, 1)',
-          borderWidth: 1
-        }
-      ]
+          borderWidth: 1,
+        },
+      ],
     };
   };
 
@@ -109,14 +200,20 @@ const PerformanceVisuals = () => {
         startDate: startDate ? startDate.toISOString() : undefined,
         endDate: endDate ? endDate.toISOString() : undefined,
         task: task.length && task[0] !== 'All' ? task.join(',') : undefined,
-        sortBy
+        sortBy,
       };
 
-      const { data } = await axios.get('http://localhost:5000/api/stats/weekly', { params });
+      const { data } = await axios.get('http://localhost:5000/api/stats/weekly', {
+        params,
+      });
       setFilteredData(data);
     } catch (error) {
       setError('Error filtering data');
       console.error('Error filtering data:', error);
+      toast.error('Error filtering data. Please try again.', {
+        position: toast.POSITION.TOP_RIGHT,
+        autoClose: 3000,
+      });
     } finally {
       setLoading(false);
     }
@@ -127,14 +224,11 @@ const PerformanceVisuals = () => {
     setEndDate(null);
     setTask(['All']);
     setSortBy('name');
-    filterData(); // Optionally, trigger filter after clearing
+    filterData();
   };
 
   const handleTaskChange = (e) => {
-    const value = Array.from(
-      e.target.selectedOptions,
-      option => option.value
-    );
+    const value = Array.from(e.target.selectedOptions, (option) => option.value);
     setTask(value);
   };
 
@@ -151,16 +245,22 @@ const PerformanceVisuals = () => {
     setSelectedCluster(cluster);
     if (cluster !== 'All') {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/stats/tasks', { params: { cluster } });
+        const { data } = await axios.get('http://localhost:5000/api/stats/tasks', {
+          params: { cluster },
+        });
         setDeepFilterData(data);
         calculateMetrics(data);
       } catch (error) {
         setError('Error fetching cluster data');
         console.error('Error fetching cluster data:', error);
+        toast.error('Error fetching cluster data. Please try again.', {
+          position: toast.POSITION.TOP_RIGHT,
+          autoClose: 3000,
+        });
       }
     } else {
       setDeepFilterData(null);
-      setMetrics({ max: '', min: '', avg: '', stddev: '', median: '' });
+      setMetrics({ max: '', min: '', avg: '' });
     }
   };
 
@@ -174,7 +274,7 @@ const PerformanceVisuals = () => {
     let minTask = '';
     let allHours = [];
 
-    data.forEach(item => {
+    data.forEach((item) => {
       total += item.totalPlannerHour;
       allHours.push(item.totalPlannerHour);
       if (item.totalPlannerHour > max) {
@@ -188,16 +288,11 @@ const PerformanceVisuals = () => {
     });
 
     const avg = total / data.length;
-    const stddev = Math.sqrt(allHours.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / data.length);
-    allHours.sort((a, b) => a - b);
-    const median = (allHours.length % 2 === 0) ? (allHours[allHours.length / 2 - 1] + allHours[allHours.length / 2]) / 2 : allHours[Math.floor(allHours.length / 2)];
 
     setMetrics({
       max: `${maxTask}: ${max}`,
       min: `${minTask}: ${min}`,
       avg: avg.toFixed(2),
-      stddev: stddev.toFixed(2),
-      median: median.toFixed(2)
     });
   };
 
@@ -216,171 +311,309 @@ const PerformanceVisuals = () => {
 
   const renderMetrics = () => {
     return (
-      <div className="metrics">
-        <div className="metric-item">
-          <h3>Max Planned Hours</h3>
-          <p>{metrics.max}</p>
-        </div>
-        <div className="metric-item">
-          <h3>Min Planned Hours</h3>
-          <p>{metrics.min}</p>
-        </div>
-        <div className="metric-item">
-          <h3>Avg Planned Hours</h3>
-          <p>{metrics.avg}</p>
-        </div>
-        {showDetailedMetrics && (
-          <>
-            <div className="metric-item">
-              <h3>Std Dev</h3>
-              <p>{metrics.stddev}</p>
-            </div>
-            <div className="metric-item">
-              <h3>Median Planned Hours</h3>
-              <p>{metrics.median}</p>
-            </div>
-          </>
-        )}
-      </div>
+      <Grid
+        templateColumns="repeat(3, 1fr)"
+        gap={6}
+        marginTop="20px"
+        padding="20px"
+        bg="#f9f9f9"
+        borderRadius="8px"
+        boxShadow="0 4px 8px rgba(0, 0, 0, 0.05)"
+      >
+        {Object.keys(metrics).map((key) => (
+          <Box
+            key={key}
+            textAlign="center"
+            padding="15px"
+            bg="white"
+            borderRadius="8px"
+            color="#333"
+            transition="transform 0.3s ease, background 0.3s ease"
+            boxShadow="0 2px 4px rgba(0, 0, 0, 0.05)"
+            as={motion.div}
+            whileHover={{ scale: 1.03 }}
+          >
+            <Text
+              fontSize="18px"
+              color="#777"
+              fontWeight="500"
+              textTransform="capitalize"
+            >
+              {key}
+            </Text>
+            <Text fontSize="16px" color="#333">
+              {metrics[key]}
+            </Text>
+          </Box>
+        ))}
+      </Grid>
     );
   };
 
   const renderChart = () => {
     const chartData = processChartData(filteredData);
-    switch (chartType) {
-      case 'Bar':
-        return <Bar data={chartData} options={{ onClick: handleChartClick }} />;
-      case 'Line':
-        return <Line data={chartData} options={{ onClick: handleChartClick }} />;
-      case 'Pie':
-        return <Pie data={chartData} options={{ onClick: handleChartClick }} />;
-      default:
-        return <Bar data={chartData} options={{ onClick: handleChartClick }} />;
-    }
+    const ChartComponent = chartType === 'Bar' ? Bar : Line;
+    return (
+      <ChartContainer
+        variants={chartVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <ChartComponent
+          data={chartData}
+          options={{ onClick: handleChartClick, maintainAspectRatio: false }}
+        />
+      </ChartContainer>
+    );
+  };
+
+  const renderClusterChart = () => {
+    const clusterChartData = processClusterChartData(deepFilterData);
+    return (
+      <ChartContainer
+        variants={chartVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <Bar
+          data={clusterChartData}
+          options={{ maintainAspectRatio: false }}
+        />
+      </ChartContainer>
+    );
   };
 
   return (
-    <div className="performance-visuals">
-      <h2>Performance Visuals</h2>
-      <div className="view-toggle">
-        <button
-          className={`toggle-button ${view === 'GDO' ? 'active' : ''}`}
-          onClick={() => setView('GDO')}
-        >
-          <FaChartBar /> <span>GDO</span>
-        </button>
-        <button
-          className={`toggle-button ${view === 'ClusterUtilization' ? 'active' : ''}`}
-          onClick={() => setView('ClusterUtilization')}
-        >
-          <FaChartPie /> <span>Cluster Utilization</span>
-        </button>
-      </div>
-      <div className="top-buttons">
-        <CSVLink data={filteredData || []} className="export-button">
-          Export Data as CSV
-        </CSVLink>
-        <button className="export-button" onClick={exportPDF}>
-          <FaDownload /> Export Data as PDF
-        </button>
-        <button className="export-button">
-          <FaDownload /> Export Data as Excel
-        </button>
-      </div>
-      {loading ? (
-        <p>Loading...</p>
-      ) : error ? (
-        <p className="error">{error}</p>
-      ) : view === 'GDO' ? (
-        <>
-          <div className="filter-section">
-            <div className="date-picker">
-              <label>Start Date: </label>
-              <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} />
+    <ChakraProvider>
+      <m.div
+        className="performance-visuals"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="header">
+          <h2>Performance Visuals</h2>
+          <div className="top-buttons">
+            <div className="export-dropdown">
+              <Button
+                onClick={() => setShowExportOptions(!showExportOptions)}
+                colorScheme="teal"
+                variant="solid"
+                size="sm"
+                leftIcon={<FaDownload />}
+              >
+                Export <FaChevronDown />
+              </Button>
+              {showExportOptions && (
+                <Box
+                  position="absolute"
+                  backgroundColor="white"
+                  boxShadow="md"
+                  borderRadius="md"
+                  overflow="hidden"
+                  zIndex="10"
+                  mt="1"
+                >
+                  <CSVLink data={filteredData || []} className="export-option">
+                    <Button
+                      width="100%"
+                      size="sm"
+                      leftIcon={<FaDownload />}
+                      variant="ghost"
+                      justifyContent="start"
+                    >
+                      CSV
+                    </Button>
+                  </CSVLink>
+                  <Button
+                    onClick={exportPDF}
+                    width="100%"
+                    size="sm"
+                    leftIcon={<FaDownload />}
+                    variant="ghost"
+                    justifyContent="start"
+                  >
+                    PDF
+                  </Button>
+                </Box>
+              )}
             </div>
-            <div className="date-picker">
-              <label>End Date: </label>
-              <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} />
-            </div>
-            <div className="sort-by">
-              <label>Sort By: </label>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="none">None</option>
-                <option value="planned">Planned Hours</option>
-                <option value="actual">Actual Hours</option>
-              </select>
-            </div>
-            <div className="filter-buttons">
-              <button className="filter-button" onClick={filterData}>Filter</button>
-              <button className="clear-filters-button" onClick={clearFilters}>
-                <FaTimes /> Clear Filters
-              </button>
-            </div>
+            <Button
+              colorScheme="teal"
+              variant="solid"
+              size="sm"
+              leftIcon={<FaFilter />}
+              onClick={() => setShowFilterModal(true)}
+            >
+              Filters
+            </Button>
           </div>
-
-          <div className="chart-options">
-            <div className="chart-type-toggle">
-              <label>Chart Type: </label>
-              <button className={`chart-toggle-button ${chartType === 'Bar' ? 'active' : ''}`} onClick={() => setChartType('Bar')}>
-                <FaChartBar /> Bar
-              </button>
-              <button className={`chart-toggle-button ${chartType === 'Line' ? 'active' : ''}`} onClick={() => setChartType('Line')}>
-                <FaChartLine /> Line
-              </button>
-              <button className={`chart-toggle-button ${chartType === 'Pie' ? 'active' : ''}`} onClick={() => setChartType('Pie')}>
-                <FaChartPie /> Pie
-              </button>
-            </div>
-            <div className="toggle-cumulative">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showCumulative}
-                  onChange={() => setShowCumulative(!showCumulative)}
-                />
-                Show Cumulative Data
-              </label>
-            </div>
-            <div className="toggle-detailed-metrics">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showDetailedMetrics}
-                  onChange={() => setShowDetailedMetrics(!showDetailedMetrics)}
-                />
-                Show Detailed Metrics
-              </label>
-            </div>
-          </div>
-
-          {filteredData && (
-            <div className="chart-container">
-              {renderChart()}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="cluster-utilization">
-          <div className="deep-filter-section">
-            <div className="cluster-filter">
-              <label>Select Cluster: </label>
-              <select value={selectedCluster} onChange={handleClusterChange}>
-                <option value="All">All</option>
-                {clusterData && clusterData.map((cluster, index) => (
-                  <option key={index} value={cluster.cluster}>{cluster.cluster}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {renderMetrics()}
-          {deepFilterData && (
-            <div className="chart-container">
-              <Bar data={processClusterChartData(deepFilterData)} />
-            </div>
-          )}
         </div>
-      )}
-    </div>
+
+        <Flex justifyContent="space-between" mt={6}>
+          <Flex gap={4}>
+            <Button
+              variant={view === 'GDO' ? 'solid' : 'outline'}
+              colorScheme="teal"
+              onClick={() => setView('GDO')}
+              size="md"
+              leftIcon={<FaChartBar />}
+            >
+              GDO
+            </Button>
+            <Button
+              variant={view === 'ClusterUtilization' ? 'solid' : 'outline'}
+              colorScheme="teal"
+              onClick={() => setView('ClusterUtilization')}
+              size="md"
+              leftIcon={<FaChartLine />}
+            >
+              Cluster Utilization
+            </Button>
+          </Flex>
+
+          <Flex gap={4}>
+            <Button
+              variant={chartType === 'Bar' ? 'solid' : 'outline'}
+              colorScheme="teal"
+              size="sm"
+              onClick={() => setChartType('Bar')}
+              leftIcon={<FaChartBar />}
+            >
+              Bar
+            </Button>
+            <Button
+              variant={chartType === 'Line' ? 'solid' : 'outline'}
+              colorScheme="teal"
+              size="sm"
+              onClick={() => setChartType('Line')}
+              leftIcon={<FaChartLine />}
+            >
+              Line
+            </Button>
+          </Flex>
+        </Flex>
+
+        {showFilterModal && (
+          <div className="filter-modal">
+            <motion.div
+              className="filter-content"
+              ref={filterRef}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <Button
+                className="close-button"
+                onClick={() => setShowFilterModal(false)}
+                size="sm"
+                variant="ghost"
+                color="gray.500"
+              >
+                <FaTimes />
+              </Button>
+              <h3>Filter Options</h3>
+              <div className="filter-row">
+                <div className="date-picker">
+                  <label>Start Date:</label>
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)}
+                  />
+                </div>
+                <div className="date-picker">
+                  <label>End Date:</label>
+                  <DatePicker
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
+                  />
+                </div>
+                <div className="sort-by">
+                  <label>Sort By:</label>
+                  <Select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="none">None</option>
+                    <option value="planned">Planned Hours</option>
+                    <option value="actual">Actual Hours</option>
+                  </Select>
+                </div>
+              </div>
+              <div className="filter-buttons">
+                <Button
+                  onClick={() => {
+                    filterData();
+                    setShowFilterModal(false);
+                  }}
+                  colorScheme="teal"
+                  size="md"
+                >
+                  Apply Filters
+                </Button>
+                <Button
+                  onClick={() => {
+                    clearFilters();
+                    setShowFilterModal(false);
+                  }}
+                  colorScheme="red"
+                  size="md"
+                  leftIcon={<FaUndo />}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {loading ? (
+          <p>Loading...</p>
+        ) : error ? (
+          <p className="error">{error}</p>
+        ) : view === 'GDO' ? (
+          <>
+            {filteredData && renderChart()}
+          </>
+        ) : (
+          <div className="cluster-utilization">
+            <div className="deep-filter-section">
+              <div className="cluster-filter">
+                <label>Select Cluster:</label>
+                <Select
+                  value={selectedCluster}
+                  onChange={handleClusterChange}
+                  size="md"
+                  width="auto"
+                  colorScheme="teal"
+                >
+                  <option value="All">All</option>
+                  {clusterData &&
+                    clusterData.map((cluster, index) => (
+                      <option key={index} value={cluster.cluster}>
+                        {cluster.cluster}
+                      </option>
+                    ))}
+                </Select>
+              </div>
+            </div>
+            <AnimatePresence>
+              {deepFilterData && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  {renderMetrics()}
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {deepFilterData && renderClusterChart()}
+          </div>
+        )}
+        <ToastContainer />
+      </m.div>
+    </ChakraProvider>
   );
 };
 
