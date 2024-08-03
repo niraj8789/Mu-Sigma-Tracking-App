@@ -105,7 +105,7 @@ function Dashboard() {
 
     try {
       console.log('Sending request to export tasks with token:', token);
-      const response = await axios.get('http://localhost:5000/api/export-ttasks', {
+      const response = await axios.get('http://localhost:5000/api/export-tasks', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
