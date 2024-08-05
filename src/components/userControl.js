@@ -2,15 +2,20 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import './UserControl.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { format } from 'date-fns';
 
 function UserControl() {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [roles] = useState(['Team Member', 'Cluster Lead', 'Manager']);
   const [error, setError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editMode, setEditMode] = useState(null); // Track which user is being edited
-  const [editClusterLead, setEditClusterLead] = useState(''); // Track the cluster lead being edited
+  const [editMode, setEditMode] = useState(null);
+  const [editClusterLead, setEditClusterLead] = useState('');
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -18,8 +23,10 @@ function UserControl() {
     clusterLead: '',
     role: 'Team Member'
   });
+  const [sortConfig, setSortConfig] = useState({ key: '', direction: '' });
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Fetch users when the component mounts
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -30,16 +37,25 @@ function UserControl() {
           }
         });
         setUsers(response.data);
+        setFilteredUsers(response.data);
       } catch (error) {
         console.error('You are not Authorized', error);
         setError('You are not Authorized');
+        toast.error('You are not Authorized');
       }
     };
 
     fetchUsers();
   }, []);
 
-  // Handle role change
+  useEffect(() => {
+    setFilteredUsers(
+      users.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [searchTerm, users]);
+
   const handleRoleChange = async (userId, newRole) => {
     try {
       const token = localStorage.getItem('authToken');
@@ -51,13 +67,15 @@ function UserControl() {
       setUsers((prevUsers) =>
         prevUsers.map((user) => (user.id === userId ? { ...user, role: newRole } : user))
       );
+      toast.success('Role updated successfully');
+      logActivity(`Role updated for user ${userId} to ${newRole}`);
     } catch (error) {
       console.error('Error updating role:', error);
       setError('Error updating role');
+      toast.error('Error updating role');
     }
   };
 
-  // Handle user addition
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
@@ -76,18 +94,20 @@ function UserControl() {
         clusterLead: '',
         role: 'Team Member'
       });
+      toast.success('User added successfully');
+      logActivity(`User added: ${newUser.email}`);
     } catch (error) {
       if (error.response && error.response.data.message === 'Email already exists') {
-        alert('User with this email already exists.');
+        toast.error('User with this email already exists.');
       } else {
         console.error('Error adding user:', error);
         setError('Error adding user');
+        toast.error('Error adding user');
       }
     }
   };
 
-  // Handle user activation/deactivation
-  const handleToggleStatus = async (userEmail) => {
+  const handleToggleStatus = async (userEmail, isDeleted) => {
     try {
       const token = localStorage.getItem('authToken');
       await axios.put(`http://localhost:5000/api/users/${userEmail}/toggle`, {}, {
@@ -96,26 +116,27 @@ function UserControl() {
         }
       });
 
-      // Fetch users again to reflect the updated status
       const response = await axios.get('http://localhost:5000/api/users', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       setUsers(response.data);
+      const statusMessage = isDeleted ? 'User deactivated' : 'User activated';
+      toast.success(statusMessage);
+      logActivity(`${statusMessage}: ${userEmail}`);
     } catch (error) {
       console.error('Error toggling user status:', error);
       setError('Error toggling user status');
+      toast.error('Error toggling user status');
     }
   };
 
-  // Handle editing "Reports To" (Cluster Lead)
   const handleEditClusterLead = (userId, clusterLead) => {
     setEditMode(userId);
     setEditClusterLead(clusterLead);
   };
 
-  // Handle saving the updated "Reports To"
   const handleSaveClusterLead = async (userId) => {
     try {
       const token = localStorage.getItem('authToken');
@@ -132,11 +153,47 @@ function UserControl() {
       );
       setEditMode(null);
       setEditClusterLead('');
+      toast.success('Cluster lead updated successfully');
+      logActivity(`Cluster lead updated for user ${userId} to ${editClusterLead}`);
     } catch (error) {
       console.error('Error updating cluster lead:', error);
       setError('Error updating cluster lead');
+      toast.error('Error updating cluster lead');
     }
   };
+
+  const handleSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+
+    setFilteredUsers((prevUsers) =>
+      [...prevUsers].sort((a, b) => {
+        if (a[key] < b[key]) {
+          return direction === 'ascending' ? -1 : 1;
+        }
+        if (a[key] > b[key]) {
+          return direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      })
+    );
+  };
+
+  const logActivity = (message) => {
+    setActivityLogs((prevLogs) => [
+      ...prevLogs,
+      { timestamp: new Date().toISOString(), message }
+    ]);
+  };
+
+  const toggleDrawer = () => {
+    setIsDrawerOpen(!isDrawerOpen);
+  };
+
+  const formatDate = (date) => format(new Date(date), 'PPpp');
 
   return (
     <div className="user-control">
@@ -146,6 +203,13 @@ function UserControl() {
           Add User
         </button>
       )}
+      <input
+        type="text"
+        placeholder="Search by name"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="search-bar"
+      />
       {showAddForm && (
         <form className="add-user-form" onSubmit={handleAddUser}>
           <div className="form-group">
@@ -217,16 +281,24 @@ function UserControl() {
       <table className="user-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Cluster</th>
+            <th onClick={() => handleSort('name')}>
+              Name {sortConfig.key === 'name' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+            </th>
+            <th onClick={() => handleSort('email')}>
+              Email {sortConfig.key === 'email' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+            </th>
+            <th onClick={() => handleSort('cluster')}>
+              Cluster {sortConfig.key === 'cluster' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+            </th>
             <th>Reports To</th>
-            <th>Role</th>
+            <th onClick={() => handleSort('role')}>
+              Role {sortConfig.key === 'role' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+            </th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {filteredUsers.map((user) => (
             <tr key={user.id} className={user.IsDeleted ? 'deactivated' : ''}>
               <td>{user.name}</td>
               <td>{user.email}</td>
@@ -274,7 +346,7 @@ function UserControl() {
                   <input
                     type="checkbox"
                     checked={!user.IsDeleted}
-                    onChange={() => handleToggleStatus(user.email)}
+                    onChange={() => handleToggleStatus(user.email, user.IsDeleted)}
                   />
                   <span className="toggle-switch-slider"></span>
                 </label>
@@ -283,6 +355,7 @@ function UserControl() {
           ))}
         </tbody>
       </table>
+      <ToastContainer />
     </div>
   );
 }
