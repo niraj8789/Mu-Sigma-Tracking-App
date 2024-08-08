@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
@@ -13,6 +13,9 @@ function Navbar() {
     const { user, setUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+
+    const menuRef = useRef(null);
+    const notificationsRef = useRef(null);
 
     useEffect(() => {
         fetchNotifications();
@@ -43,25 +46,38 @@ function Navbar() {
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (showNotifications && !event.target.closest('.notification-dropdown') && !event.target.closest('.notification-icon')) {
+            // Check if click is outside the notifications dropdown
+            if (
+                showNotifications &&
+                notificationsRef.current &&
+                !notificationsRef.current.contains(event.target) &&
+                !event.target.closest('.notification-icon')
+            ) {
                 setShowNotifications(false);
             }
-            if (showMenu && !event.target.closest('.user-icon') && !event.target.closest('.dropdown-menu')) {
+
+            // Check if click is outside the user menu dropdown
+            if (
+                showMenu &&
+                menuRef.current &&
+                !menuRef.current.contains(event.target) &&
+                !event.target.closest('.user-icon')
+            ) {
                 setShowMenu(false);
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('click', handleClickOutside); // Use 'click' instead of 'mousedown'
 
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('click', handleClickOutside); // Cleanup event listener
         };
     }, [showNotifications, showMenu]);
 
     const markNotificationAsRead = async (index) => {
         try {
             await axios.put(`http://localhost:5000/api/notifications/${index}/read`);
-            const updatedNotifications = notifications.map((notification, i) => 
+            const updatedNotifications = notifications.map((notification, i) =>
                 i === index ? { ...notification, read: true } : notification
             );
             setNotifications(updatedNotifications);
@@ -77,7 +93,7 @@ function Navbar() {
     };
 
     const toggleMenu = () => {
-        setShowMenu(!showMenu);
+        setShowMenu(prev => !prev);
     };
 
     const handleLogout = () => {
@@ -87,10 +103,12 @@ function Navbar() {
     };
 
     const toggleNotifications = () => {
-        setShowNotifications(!showNotifications);
+        setShowNotifications(prev => !prev);
     };
 
     const unreadCount = notifications.filter(notification => !notification.read).length;
+
+    const isDashboard = location.pathname === '/dashboard';
 
     return (
         <nav className="navbar">
@@ -104,42 +122,44 @@ function Navbar() {
                         <Link to="/user-control" className={`nav-link ${location.pathname === '/user-control' ? 'active' : ''}`}>User Control</Link>
                     </div>
                 </div>
-                <div className="user-actions">
-                    <div className="notification-icon" onClick={toggleNotifications}>
-                        🔔
-                        {unreadCount > 0 && (
-                            <span className="notification-count">{unreadCount}</span>
-                        )}
-                    </div>
-                    <div className={`notification-dropdown ${showNotifications ? 'show' : ''}`}>
-                        {notifications.length > 0 ? (
-                            notifications.map((notification, index) => (
-                                <div
-                                    key={index}
-                                    className={`notification-item ${notification.read ? 'read' : ''}`}
-                                    onClick={() => markNotificationAsRead(index)}
-                                >
-                                    <div className="message">{notification.message}</div>
-                                    <div className="timestamp">{moment(notification.timestamp).tz('Asia/Kolkata').format('HH:mm')}</div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="notification-item">No notifications</div>
-                        )}
-                    </div>
-                    {user && user.name && (
-                        <div className="user-icon" onClick={toggleMenu}>
-                            {getInitials(user.name)}
-                            {showMenu && (
-                                <div className="dropdown-menu">
-                                    <button onClick={handleLogout}>Logout</button>
-                                    <Link to="/view-details">View Details</Link>
-                                    <Link to="/change-password" state={{ user }}>Change Password</Link>
-                                </div>
+                {isDashboard && (
+                    <div className="user-actions">
+                        <div className="notification-icon" onClick={toggleNotifications}>
+                            🔔
+                            {unreadCount > 0 && (
+                                <span className="notification-count">{unreadCount}</span>
                             )}
                         </div>
-                    )}
-                </div>
+                        <div ref={notificationsRef} className={`notification-dropdown ${showNotifications ? 'show' : ''}`}>
+                            {notifications.length > 0 ? (
+                                notifications.map((notification, index) => (
+                                    <div
+                                        key={index}
+                                        className={`notification-item ${notification.read ? 'read' : ''}`}
+                                        onClick={() => markNotificationAsRead(index)}
+                                    >
+                                        <div className="message">{notification.message}</div>
+                                        <div className="timestamp">{moment(notification.timestamp).tz('Asia/Kolkata').format('HH:mm')}</div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="notification-item">No notifications</div>
+                            )}
+                        </div>
+                        {user && user.name && (
+                            <div className="user-icon" onClick={toggleMenu}>
+                                {getInitials(user.name)}
+                                {showMenu && (
+                                    <div ref={menuRef} className="dropdown-menu">
+                                        <button onClick={handleLogout}>Logout</button>
+                                        <Link to="/view-details">View Details</Link>
+                                        {/* <Link to="/change-password" state={{ user }}>Change Password</Link> */}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </nav>
     );

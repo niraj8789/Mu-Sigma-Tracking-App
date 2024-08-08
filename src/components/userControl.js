@@ -122,7 +122,7 @@ function UserControl() {
         }
       });
       setUsers(response.data);
-      const statusMessage = isDeleted ? 'User deactivated' : 'User activated';
+      const statusMessage = isDeleted ? 'User activated' : 'User Deactivated';
       toast.success(statusMessage);
       logActivity(`${statusMessage}: ${userEmail}`);
     } catch (error) {

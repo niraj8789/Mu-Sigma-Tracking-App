@@ -494,3 +494,33 @@
   border-color: #26a69a;
   box-shadow: 0 0 6px rgba(38, 166, 154, 0.5);
 }
+
+.performance-visuals .user-icon,
+.performance-visuals .notification-icon {
+  font-size: 24px !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50%;
+}
+
+.performance-visuals .notification-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  padding: 5px;
+  font-size: 12px;
+}
+
+.performance-visuals .user-icon {
+  margin-left: 20px;
+}
+
+.performance-visuals .notification-icon {
+  margin-right: 20px;
+}

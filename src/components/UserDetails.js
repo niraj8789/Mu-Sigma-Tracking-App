@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link,useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Import useAuth hook
 import './UserDetails.css';
 
@@ -38,7 +38,7 @@ function UserDetails() {
                     </tr>
                 </tbody>
             </table>
-            <button onClick={handleChangePassword}>Change Password</button>
+            <Link to="/change-password" state={{ user }}>Change Password</Link>
         </div>
     );
 }
