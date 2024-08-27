@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import './UserControl.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { motion } from 'framer-motion'; // Import Framer Motion for animations
-import './UserControl.css';
+import { format } from 'date-fns';
 
 function UserControl() {
   const { user } = useAuth();
@@ -14,16 +14,18 @@ function UserControl() {
   const [roles] = useState(['Team Member', 'Cluster Lead', 'Manager']);
   const [error, setError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editMode, setEditMode] = useState(null);
+  const [editClusterLead, setEditClusterLead] = useState('');
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     cluster: '',
     clusterLead: '',
-    role: 'Team Member',
+    role: 'Team Member'
   });
   const [sortConfig, setSortConfig] = useState({ key: '', direction: '' });
-  const [editMode, setEditMode] = useState(null);
-  const [editClusterLead, setEditClusterLead] = useState('');
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -31,8 +33,8 @@ function UserControl() {
         const token = localStorage.getItem('authToken');
         const response = await axios.get('http://localhost:5000/api/users', {
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         });
         setUsers(response.data);
         setFilteredUsers(response.data);
@@ -48,11 +50,31 @@ function UserControl() {
 
   useEffect(() => {
     setFilteredUsers(
-      users.filter((user) =>
+      users.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
   }, [searchTerm, users]);
+
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.put(`http://localhost:5000/api/users/${userId}/role`, { role: newRole }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setUsers((prevUsers) =>
+        prevUsers.map((user) => (user.id === userId ? { ...user, role: newRole } : user))
+      );
+      toast.success('Role updated successfully');
+      logActivity(`Role updated for user ${userId} to ${newRole}`);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      setError('Error updating role');
+      toast.error('Error updating role');
+    }
+  };
 
   const handleAddUser = async (e) => {
     e.preventDefault();
@@ -60,8 +82,8 @@ function UserControl() {
       const token = localStorage.getItem('authToken');
       await axios.post('http://localhost:5000/api/add-user', newUser, {
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
       setUsers((prevUsers) => [...prevUsers, newUser]);
       setShowAddForm(false);
@@ -70,14 +92,12 @@ function UserControl() {
         email: '',
         cluster: '',
         clusterLead: '',
-        role: 'Team Member',
+        role: 'Team Member'
       });
       toast.success('User added successfully');
+      logActivity(`User added: ${newUser.email}`);
     } catch (error) {
-      if (
-        error.response &&
-        error.response.data.message === 'Email already exists'
-      ) {
+      if (error.response && error.response.data.message === 'Email already exists') {
         toast.error('User with this email already exists.');
       } else {
         console.error('Error adding user:', error);
@@ -87,52 +107,24 @@ function UserControl() {
     }
   };
 
-  const handleRoleChange = async (userId, newRole) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      await axios.put(
-        `http://localhost:5000/api/users/${userId}/role`,
-        { role: newRole },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          }
-        }
-      );
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === userId ? { ...user, role: newRole } : user
-        )
-      );
-      toast.success('Role updated successfully');
-    } catch (error) {
-      console.error('Error updating role:', error);
-      setError('Error updating role');
-      toast.error('Error updating role');
-    }
-  };
-
   const handleToggleStatus = async (userEmail, isDeleted) => {
     try {
       const token = localStorage.getItem('authToken');
-      await axios.put(
-        `http://localhost:5000/api/users/${userEmail}/toggle`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          }
+      await axios.put(`http://localhost:5000/api/users/${userEmail}/toggle`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      });
 
       const response = await axios.get('http://localhost:5000/api/users', {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         }
       });
       setUsers(response.data);
       const statusMessage = isDeleted ? 'User activated' : 'User Deactivated';
       toast.success(statusMessage);
+      logActivity(`${statusMessage}: ${userEmail}`);
     } catch (error) {
       console.error('Error toggling user status:', error);
       setError('Error toggling user status');
@@ -148,15 +140,11 @@ function UserControl() {
   const handleSaveClusterLead = async (userId) => {
     try {
       const token = localStorage.getItem('authToken');
-      await axios.put(
-        `http://localhost:5000/api/users/${userId}/clusterLead`,
-        { clusterLead: editClusterLead },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      await axios.put(`http://localhost:5000/api/users/${userId}/clusterLead`, { clusterLead: editClusterLead }, {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      });
 
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
@@ -166,6 +154,7 @@ function UserControl() {
       setEditMode(null);
       setEditClusterLead('');
       toast.success('Cluster lead updated successfully');
+      logActivity(`Cluster lead updated for user ${userId} to ${editClusterLead}`);
     } catch (error) {
       console.error('Error updating cluster lead:', error);
       setError('Error updating cluster lead');
@@ -193,23 +182,26 @@ function UserControl() {
     );
   };
 
+  const logActivity = (message) => {
+    setActivityLogs((prevLogs) => [
+      ...prevLogs,
+      { timestamp: new Date().toISOString(), message }
+    ]);
+  };
+
+  const toggleDrawer = () => {
+    setIsDrawerOpen(!isDrawerOpen);
+  };
+
+  const formatDate = (date) => format(new Date(date), 'PPpp');
+
   return (
-    <motion.div
-      className="user-control"
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="user-control">
       <h2 className="user-control-heading">User Control Panel</h2>
       {user.role === 'Manager' && (
-        <motion.button
-          className="add-user-btn"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowAddForm(true)}
-        >
+        <button className="add-user-btn" onClick={() => setShowAddForm(!showAddForm)}>
           Add User
-        </motion.button>
+        </button>
       )}
       <input
         type="text"
@@ -219,119 +211,88 @@ function UserControl() {
         className="search-bar"
       />
       {showAddForm && (
-        <motion.div
-          className="modal"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <motion.div
-            className="modal-content"
-            initial={{ y: 50 }}
-            animate={{ y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <span className="close-btn" onClick={() => setShowAddForm(false)}>
-              &times;
-            </span>
-            <h2>Add New User</h2>
-            <form onSubmit={handleAddUser}>
-              <div className="form-group">
-                <label htmlFor="name">Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  value={newUser.name}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, name: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  value={newUser.email}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, email: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="cluster">Cluster</label>
-                <input
-                  type="text"
-                  id="cluster"
-                  value={newUser.cluster}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, cluster: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="clusterLead">Reports To</label>
-                <input
-                  type="text"
-                  id="clusterLead"
-                  value={newUser.clusterLead}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, clusterLead: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="role">Role</label>
-                <select
-                  id="role"
-                  value={newUser.role}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, role: e.target.value })
-                  }
-                  required
-                >
-                  {roles.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button type="submit" className="btn-submit">
-                Add User
-              </button>
-            </form>
-          </motion.div>
-        </motion.div>
+        <form className="add-user-form" onSubmit={handleAddUser}>
+          <div className="form-group">
+            <label htmlFor="name">Name</label>
+            <input
+              type="text"
+              id="name"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              className="form-control"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              className="form-control"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="cluster">Cluster</label>
+            <input
+              type="text"
+              id="cluster"
+              value={newUser.cluster}
+              onChange={(e) => setNewUser({ ...newUser, cluster: e.target.value })}
+              className="form-control"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="clusterLead">Reports To</label>
+            <input
+              type="text"
+              id="clusterLead"
+              value={newUser.clusterLead}
+              onChange={(e) => setNewUser({ ...newUser, clusterLead: e.target.value })}
+              className="form-control"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="role">Role</label>
+            <select
+              id="role"
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+              className="form-control"
+              required
+            >
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="btn-submit">
+            Add User
+          </button>
+        </form>
       )}
       {error && <p className="error">{error}</p>}
       <table className="user-table">
         <thead>
           <tr>
             <th onClick={() => handleSort('name')}>
-              Name{' '}
-              {sortConfig.key === 'name' &&
-                (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              Name {sortConfig.key === 'name' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
             </th>
             <th onClick={() => handleSort('email')}>
-              Email{' '}
-              {sortConfig.key === 'email' &&
-                (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              Email {sortConfig.key === 'email' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
             </th>
             <th onClick={() => handleSort('cluster')}>
-              Cluster{' '}
-              {sortConfig.key === 'cluster' &&
-                (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              Cluster {sortConfig.key === 'cluster' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
             </th>
             <th>Reports To</th>
             <th onClick={() => handleSort('role')}>
-              Role{' '}
-              {sortConfig.key === 'role' &&
-                (sortConfig.direction === 'ascending' ? '↑' : '↓')}
+              Role {sortConfig.key === 'role' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
             </th>
             <th>Status</th>
           </tr>
@@ -351,10 +312,7 @@ function UserControl() {
                       onChange={(e) => setEditClusterLead(e.target.value)}
                       className="edit-cluster-input"
                     />
-                    <button
-                      className="save-btn"
-                      onClick={() => handleSaveClusterLead(user.id)}
-                    >
+                    <button className="save-btn" onClick={() => handleSaveClusterLead(user.id)}>
                       Save
                     </button>
                   </>
@@ -363,9 +321,7 @@ function UserControl() {
                     {user.clusterLead}
                     <span
                       className="edit-icon"
-                      onClick={() =>
-                        handleEditClusterLead(user.id, user.clusterLead)
-                      }
+                      onClick={() => handleEditClusterLead(user.id, user.clusterLead)}
                     >
                       ✏️
                     </span>
@@ -400,9 +356,8 @@ function UserControl() {
         </tbody>
       </table>
       <ToastContainer />
-    </motion.div>
+    </div>
   );
 }
 
 export default UserControl;
-
