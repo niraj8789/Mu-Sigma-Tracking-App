@@ -1,46 +1,55 @@
-/* Enhanced CSS with more sophisticated animations */
 .form-data-details {
     margin: 20px;
-    padding: 30px;
-    background-color: #f5f7fa; /* Soft light blue background */
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    background-color: #f0f8ff; /* Light blue background */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: hidden;
+    transition: transform 0.3s ease-in-out;
+}
+
+.form-data-details:hover {
+    transform: scale(1.02);
 }
 
 .details-heading {
     color: #333;
-    font-size: 30px;
+    font-size: 28px;
     text-align: left;
-    border-bottom: 3px solid #4a0707;
-    padding-bottom: 12px;
+    border-bottom: 3px solid #51070c; /* Green underline */
+    padding-bottom: 10px;
     margin-bottom: 20px;
+    animation: fadeIn 1s ease-in-out;
 }
 
 .task-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    animation: fadeInUp 0.5s ease-in-out;
 }
 
 .task-table th, .task-table td {
     border: 1px solid #ddd;
-    padding: 10px;
+    padding: 8px;
     text-align: left;
-    transition: background-color 0.3s ease-in-out;
 }
 
 .task-table th {
-    background-color: #4a0707;
+    background-color: #51070c; /* Green header */
     color: white;
 }
 
 .task-table tr:nth-child(even) {
-    background-color: #f7f7f7;
+    background-color: #f9f9f9;
 }
 
-.input-actual-hour {
+.task-table tr:hover {
+    background-color: #f1f1f1;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.actual-hour-input {
     width: 100%;
     padding: 8px;
     border: 1px solid #ccc;
@@ -48,20 +57,27 @@
     transition: border-color 0.3s ease-in-out;
 }
 
-.input-actual-hour:focus {
-    border-color: #4a0707;
+.actual-hour-input:focus {
+    border-color: #4a0707; /* Green focus border */
     outline: none;
 }
 
 .submit-button {
-    padding: 12px 25px;
+    display: inline-block;
+    padding: 10px 20px;
     font-size: 16px;
     color: white;
-    background-color: #4a0707;
+    background-color: #51070c; /* Green button */
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
     margin-top: 20px;
+}
+
+.submit-button:hover {
+    background-color: #51070c;
+    transform: translateY(-2px);
 }
 
 .loading {
@@ -71,18 +87,80 @@
     margin-top: 50px;
 }
 
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .progress {
     margin-top: 20px;
     height: 20px;
-    background-color: #e8e8e8;
+    background-color: #f9f9f9;
     border-radius: 5px;
     overflow: hidden;
 }
 
 .progress-bar {
     height: 100%;
-    background-color: #4a0707;
+    background-color: #51070c; /* Green progress bar */
     text-align: center;
     line-height: 20px;
     color: white;
+}
+
+.checkbox-label {
+    display: block;
+    position: relative;
+    padding-left: 35px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-size: 22px;
+    user-select: none;
+}
+
+.checkbox-input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 25px;
+    width: 25px;
+    background-color: #ddd;
+    border-radius: 5px;
+}
+
+.checkbox-input:checked + .checkmark {
+    background-color: #51070c; /* Green when checked */
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.checkbox-input:checked + .checkmark:after {
+    display: block;
+}
+
+.checkmark:after {
+    left: 9px;
+    top: 5px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
 }
