@@ -14,7 +14,6 @@
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: all var(--transition-speed) ease;
-  animation: fadeIn 0.5s ease-in-out;
 }
 
 .user-control * {
@@ -30,7 +29,6 @@
   text-transform: uppercase;
   letter-spacing: 1.5px;
   position: relative;
-  animation: slideInFromLeft 0.5s ease-in-out;
 }
 
 .user-control-heading::after {
@@ -56,8 +54,8 @@
   border-radius: 30px;
   font-size: 1em;
   cursor: pointer;
-  transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease;
-  animation: fadeIn 0.6s ease-in-out;
+  transition: background-color var(--transition-speed) ease,
+    transform var(--transition-speed) ease;
 }
 
 .add-user-btn:hover {
@@ -65,34 +63,78 @@
   transform: translateY(-2px);
 }
 
-.add-user-form {
-  margin: 20px 0;
-  padding: 20px;
-  background: var(--accent-color);
+.modal {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity var(--transition-speed) ease;
+}
+
+.modal-content {
+  background-color: var(--background-color);
+  padding: 10px 15px; /* Adjusted padding for a compact layout */
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  animation: slideInFromBottom 0.5s ease-in-out;
+  max-width: 350px; /* Reduced width */
+  width: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-title {
+  margin-top: 0; /* Removed top margin */
+  text-align: center;
+  color: var(--primary-color);
+  font-size: 1.2em;
+  margin-bottom: 10px; /* Reduced bottom margin */
+  letter-spacing: 1px;
+}
+
+.close-btn {
+  font-size: 20px; /* Reduced font size */
+  font-weight: bold;
+  color: var(--primary-color);
+  cursor: pointer;
+  align-self: flex-end;
+  transition: color var(--transition-speed) ease;
+}
+
+.close-btn:hover {
+  color: var(--secondary-color);
 }
 
 .form-group {
-  margin-bottom: 15px;
+  width: 100%;
+  margin-bottom: 10px; /* Reduced margin */
+  text-align: left;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px; /* Reduced margin */
   color: var(--secondary-color);
-  font-weight: bold;
-  transition: color var(--transition-speed) ease;
+  font-size: 0.9em; /* Smaller font size */
 }
 
 .form-group input,
 .form-group select {
-  width: calc(100% - 10px);
-  padding: 10px;
+  width: calc(100% - 10px); /* Adjusted width */
+  padding: 8px; /* Reduced padding */
+  margin: 0;
   border-radius: 5px;
   border: 1px solid var(--border-color);
-  transition: border-color var(--transition-speed) ease, background-color var(--transition-speed) ease;
+  font-size: 0.9em; /* Smaller font size */
+  transition: border-color var(--transition-speed) ease,
+    background-color var(--transition-speed) ease;
 }
 
 .form-group input:focus,
@@ -103,15 +145,16 @@
 
 .btn-submit {
   display: inline-block;
+  width: 100%;
   background-color: var(--primary-color);
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 30px;
-  font-size: 1em;
+  padding: 8px; /* Reduced padding for a compact button */
+  border-radius: 20px; /* Adjusted border-radius */
+  font-size: 0.9em; /* Smaller font size */
   cursor: pointer;
-  transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease;
-  animation: fadeIn 0.7s ease-in-out;
+  transition: background-color var(--transition-speed) ease,
+    transform var(--transition-speed) ease;
 }
 
 .btn-submit:hover {
@@ -123,7 +166,7 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-  animation: fadeIn 0.8s ease-in-out;
+  transition: all var(--transition-speed) ease;
 }
 
 .user-table th,
@@ -140,26 +183,11 @@
   color: white;
   font-size: 1em;
   text-transform: uppercase;
-  animation: slideInFromTop 0.5s ease-in-out;
   position: relative;
 }
 
 .user-table th:hover {
   background-color: var(--primary-color);
-}
-
-.user-table th:after {
-  content: '';
-  display: inline-block;
-  margin-left: 5px;
-}
-
-.user-table th.sort-ascending:after {
-  content: '↑';
-}
-
-.user-table th.sort-descending:after {
-  content: '↓';
 }
 
 .user-table tr:nth-child(even) {
@@ -240,56 +268,11 @@ input:checked + .toggle-switch-slider:before {
   font-size: 1em;
   text-align: center;
   margin-bottom: 20px;
-  animation: fadeIn 0.9s ease-in-out;
 }
 
 .user-table tr.deactivated {
   color: grey;
   background-color: #f9f9f9;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideInFromBottom {
-  from {
-    opacity: 0;
-    transform: translateY(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromTop {
-  from {
-    opacity: 0;
-    transform: translateY(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .edit-cluster-input {
@@ -317,66 +300,4 @@ input:checked + .toggle-switch-slider:before {
 
 .edit-icon:hover {
   transform: scale(1.1);
-}
-
-.edit-cluster-input::after {
-  content: '✔';
-  color: var(--primary-color);
-  margin-left: 10px;
-  cursor: pointer;
-  transition: color var(--transition-speed) ease, transform var (--transition-speed) ease;
-}
-
-.edit-cluster-input:hover::after {
-  color: var(--secondary-color);
-  transform: scale(1.2);
-}
-
-.activity-log-btn {
-  display: block;
-  margin: 20px auto;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 30px;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease;
-  animation: fadeIn 0.6s ease-in-out;
-}
-
-.activity-log-btn:hover {
-  background-color: #1f6391;
-  transform: translateY(-2px);
-}
-
-.activity-log {
-  margin-top: 20px;
-  background-color: var(--accent-color);
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  animation: fadeIn 0.8s ease-in-out;
-}
-
-.activity-log h3 {
-  margin: 0 0 10px 0;
-  font-size: 1.5em;
-  color: var(--secondary-color);
-}
-
-.activity-log ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.activity-log li {
-  padding: 5px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.activity-log li:last-child {
-  border-bottom: none;
 }

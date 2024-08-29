@@ -99,7 +99,6 @@ const PerformanceVisuals = () => {
   const [metrics, setMetrics] = useState({
     max: '',
     min: '',
-    avg: '',
   });
   const [chartType, setChartType] = useState('Bar');
   const [loading, setLoading] = useState(false);
@@ -260,23 +259,19 @@ const PerformanceVisuals = () => {
       }
     } else {
       setDeepFilterData(null);
-      setMetrics({ max: '', min: '', avg: '' });
+      setMetrics({ max: '', min: '' });
     }
   };
 
   const calculateMetrics = (data) => {
     if (data.length === 0) return;
 
-    let total = 0;
     let max = 0;
     let min = Number.MAX_VALUE;
     let maxTask = '';
     let minTask = '';
-    let allHours = [];
 
     data.forEach((item) => {
-      total += item.totalPlannerHour;
-      allHours.push(item.totalPlannerHour);
       if (item.totalPlannerHour > max) {
         max = item.totalPlannerHour;
         maxTask = item.taskType;
@@ -287,12 +282,9 @@ const PerformanceVisuals = () => {
       }
     });
 
-    const avg = total / data.length;
-
     setMetrics({
       max: `${maxTask}: ${max}`,
       min: `${minTask}: ${min}`,
-      avg: avg.toFixed(2),
     });
   };
 
@@ -311,42 +303,24 @@ const PerformanceVisuals = () => {
 
   const renderMetrics = () => {
     return (
-      <Grid
-        templateColumns="repeat(3, 1fr)"
-        gap={6}
-        marginTop="20px"
-        padding="20px"
-        bg="#f9f9f9"
-        borderRadius="8px"
-        boxShadow="0 4px 8px rgba(0, 0, 0, 0.05)"
-      >
-        {Object.keys(metrics).map((key) => (
-          <Box
-            key={key}
-            textAlign="center"
-            padding="15px"
-            bg="white"
-            borderRadius="8px"
-            color="#333"
-            transition="transform 0.3s ease, background 0.3s ease"
-            boxShadow="0 2px 4px rgba(0, 0, 0, 0.05)"
-            as={motion.div}
-            whileHover={{ scale: 1.03 }}
-          >
-            <Text
-              fontSize="18px"
-              color="#777"
-              fontWeight="500"
-              textTransform="capitalize"
-            >
-              {key}
-            </Text>
-            <Text fontSize="16px" color="#333">
-              {metrics[key]}
-            </Text>
-          </Box>
-        ))}
-      </Grid>
+      <Flex justifyContent="center" marginTop="20px">
+        <Text
+          fontSize="16px"
+          color="#333"
+          fontWeight="500"
+          padding="0 10px"
+        >
+          <strong>Max:</strong> {metrics.max}
+        </Text>
+        <Text
+          fontSize="16px"
+          color="#333"
+          fontWeight="500"
+          padding="0 10px"
+        >
+          <strong>Min:</strong> {metrics.min}
+        </Text>
+      </Flex>
     );
   };
 
@@ -393,61 +367,63 @@ const PerformanceVisuals = () => {
       >
         <div className="header">
           <h2>Performance Visuals</h2>
-          <div className="top-buttons">
-            <div className="export-dropdown">
-              <Button
-                onClick={() => setShowExportOptions(!showExportOptions)}
-                colorScheme="teal"
-                variant="solid"
-                size="sm"
-                leftIcon={<FaDownload />}
-              >
-                Export <FaChevronDown />
-              </Button>
-              {showExportOptions && (
-                <Box
-                  position="absolute"
-                  backgroundColor="white"
-                  boxShadow="md"
-                  borderRadius="md"
-                  overflow="hidden"
-                  zIndex="10"
-                  mt="1"
+          {view === 'GDO' && (
+            <div className="top-buttons">
+              <div className="export-dropdown">
+                <Button
+                  onClick={() => setShowExportOptions(!showExportOptions)}
+                  colorScheme="teal"
+                  variant="solid"
+                  size="sm"
+                  leftIcon={<FaDownload />}
                 >
-                  <CSVLink data={filteredData || []} className="export-option">
+                  Export <FaChevronDown />
+                </Button>
+                {showExportOptions && (
+                  <Box
+                    position="absolute"
+                    backgroundColor="white"
+                    boxShadow="md"
+                    borderRadius="md"
+                    overflow="hidden"
+                    zIndex="10"
+                    mt="1"
+                  >
+                    <CSVLink data={filteredData || []} className="export-option">
+                      <Button
+                        width="100%"
+                        size="sm"
+                        leftIcon={<FaDownload />}
+                        variant="ghost"
+                        justifyContent="start"
+                      >
+                        CSV
+                      </Button>
+                    </CSVLink>
                     <Button
+                      onClick={exportPDF}
                       width="100%"
                       size="sm"
                       leftIcon={<FaDownload />}
                       variant="ghost"
                       justifyContent="start"
                     >
-                      CSV
+                      PDF
                     </Button>
-                  </CSVLink>
-                  <Button
-                    onClick={exportPDF}
-                    width="100%"
-                    size="sm"
-                    leftIcon={<FaDownload />}
-                    variant="ghost"
-                    justifyContent="start"
-                  >
-                    PDF
-                  </Button>
-                </Box>
-              )}
+                  </Box>
+                )}
+              </div>
+              <Button
+                colorScheme="teal"
+                variant="solid"
+                size="sm"
+                leftIcon={<FaFilter />}
+                onClick={() => setShowFilterModal(true)}
+              >
+                Filters
+              </Button>
             </div>
-            <Button
-              colorScheme="teal"
-              variant="solid"
-              size="sm"
-              leftIcon={<FaFilter />}
-              onClick={() => setShowFilterModal(true)}
-            >
-              Filters
-            </Button>
-          </div>
+          )}
         </div>
 
         <Flex justifyContent="space-between" mt={6}>
@@ -472,26 +448,28 @@ const PerformanceVisuals = () => {
             </Button>
           </Flex>
 
-          <Flex gap={4}>
-            <Button
-              variant={chartType === 'Bar' ? 'solid' : 'outline'}
-              colorScheme="teal"
-              size="sm"
-              onClick={() => setChartType('Bar')}
-              leftIcon={<FaChartBar />}
-            >
-              Bar
-            </Button>
-            <Button
-              variant={chartType === 'Line' ? 'solid' : 'outline'}
-              colorScheme="teal"
-              size="sm"
-              onClick={() => setChartType('Line')}
-              leftIcon={<FaChartLine />}
-            >
-              Line
-            </Button>
-          </Flex>
+          {view === 'GDO' && (
+            <Flex gap={4}>
+              <Button
+                variant={chartType === 'Bar' ? 'solid' : 'outline'}
+                colorScheme="teal"
+                size="sm"
+                onClick={() => setChartType('Bar')}
+                leftIcon={<FaChartBar />}
+              >
+                Bar
+              </Button>
+              <Button
+                variant={chartType === 'Line' ? 'solid' : 'outline'}
+                colorScheme="teal"
+                size="sm"
+                onClick={() => setChartType('Line')}
+                leftIcon={<FaChartLine />}
+              >
+                Line
+              </Button>
+            </Flex>
+          )}
         </Flex>
 
         {showFilterModal && (
