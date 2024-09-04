@@ -30,6 +30,7 @@ function DailyForm() {
     useEffect(() => {
         if (user) {
             setName(user.name); // Automatically set the user's name
+            setCluster(user.cluster); // Automatically set the user's cluster
         }
     }, [user]);
 
@@ -99,7 +100,7 @@ function DailyForm() {
                         readOnly // Make the name field read-only as it's populated automatically
                     />
                     <input type="date" value={date} readOnly />
-                    <select value={cluster} onChange={(e) => setCluster(e.target.value)}>
+                    <select value={cluster} onChange={(e) => setCluster(e.target.value)} disabled>
                         <option value="">Select Cluster</option>
                         {Array.from({ length: 10 }, (_, i) => (
                             <option key={i} value={i + 1}>
